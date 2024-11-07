@@ -50,6 +50,19 @@ class Utils:
         output_file = "youtube_videos.csv"
         
         try:
+            # 转换时间格式和观看次数
+            if isinstance(video_data, list):
+                for item in video_data:
+                    if 'published_time_text' in item:
+                        item['published_time_text'] = Utils.convert_relative_time(item['published_time_text'])
+                    if 'viewCountText' in item:
+                        item['viewCountText'] = Utils.convert_view_count(item['viewCountText'])
+            else:
+                if 'published_time_text' in video_data:
+                    video_data['published_time_text'] = Utils.convert_relative_time(video_data['published_time_text'])
+                if 'viewCountText' in video_data:
+                    video_data['viewCountText'] = Utils.convert_view_count(video_data['viewCountText'])
+            
             # 确定表头字段
             if isinstance(video_data, list):
                 fieldnames = video_data[0].keys() if video_data else []
@@ -294,3 +307,79 @@ class Utils:
         
         print(f"\n总共解析了 {len(results)} 个视频的数据")
         return results
+
+    @staticmethod
+    def convert_relative_time(relative_time_str):
+        """
+        将相对时间字符串转换为具体时间
+        Args:
+            relative_time_str: 相对时间字符串，如"1个月前"、"2周前"、"3天前"等
+        Returns:
+            str: 转换后的时间字符串，格式为'%Y-%m-%d %H:%M:%S'
+        """
+        try:
+            # 获取当前时间
+            current_time = time.time()
+            
+            # 解析数字和单位
+            if not relative_time_str:
+                return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))
+                
+            # 提取数字和单位
+            import re
+            match = re.match(r'(\d+)?(.*?)前', relative_time_str)
+            if not match:
+                return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))
+                
+            number = int(match.group(1)) if match.group(1) else 1
+            unit = match.group(2)
+            
+            # 转换单位到秒
+            seconds = 0
+            if '年' in unit:
+                seconds = number * 365 * 24 * 3600
+            elif '个月' in unit:
+                seconds = number * 30 * 24 * 3600
+            elif '周' in unit:
+                seconds = number * 7 * 24 * 3600
+            elif '天' in unit:
+                seconds = number * 24 * 3600
+            elif '小时' in unit:
+                seconds = number * 3600
+            elif '分钟' in unit:
+                seconds = number * 60
+            elif '秒' in unit:
+                seconds = number
+            
+            # 计算具体时间
+            target_time = current_time - seconds
+            
+            # 转换为指定格式
+            return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(target_time))
+            
+        except Exception as e:
+            print(f"时间转换出错: {str(e)}")
+            return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))
+
+    @staticmethod
+    def convert_view_count(view_count_str):
+        """
+        将观看次数字符串转换为整数
+        Args:
+            view_count_str: 观看次数字符串，如"102,717次观看"
+        Returns:
+            int: 转换后的整数
+        """
+        try:
+            if not view_count_str:
+                return 0
+                
+            # 移除"次观看"并替换逗号
+            number_str = view_count_str.replace('次观看', '').replace(',', '')
+            
+            # 转换为整数
+            return int(number_str)
+            
+        except Exception as e:
+            print(f"观看次数转换出错: {str(e)}")
+            return 0

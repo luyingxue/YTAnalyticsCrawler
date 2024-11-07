@@ -3,80 +3,80 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
 import json
-import base64
-import brotli
+from utils import Utils
 
-def scroll_and_analyze(driver, proxy, output_file, max_scrolls=5):
+def scroll_and_analyze(driver, proxy, max_scrolls=2):
     processed_entries = set()
-    search_request_count = 0
+    request_count = 0
     last_height = driver.execute_script("return document.documentElement.scrollHeight")
     print("初始页面高度:", last_height)
     
-    scroll_count = 0
+    # 获取当前页面URL并判断类型
+    current_url = driver.current_url
+    print(f"当前页面URL: {current_url}")
     
+    # 定义需要捕获的请求URL模式
+    if 'youtube.com/results' in current_url:
+        # 搜索结果页面
+        target_url = 'www.youtube.com/youtubei/v1/search'
+        print("检测到搜索结果页面，将捕获搜索API请求")
+    elif 'youtube.com/hashtag' in current_url:
+        # 话题标签页面
+        target_url = 'www.youtube.com/youtubei/v1/browse'
+        print("检测到话题标签页面，将捕获浏览API请求")
+    else:
+        # 其他页面，可以继续添加其他类型
+        print(f"未识别的页面类型: {current_url}")
+        target_url = 'www.youtube.com/youtubei/v1/search'  # 默认使用搜索API
+    
+    scroll_count = 0
     while scroll_count < max_scrolls:
         try:
             driver.execute_script("window.scrollTo(0, document.documentElement.scrollHeight);")
             print(f"\n执行第 {scroll_count + 1} 次滚动")
             time.sleep(2)
             
-            with open(output_file, 'a', encoding='utf-8') as f:
-                for entry in proxy.har['log']['entries']:
-                    request_url = entry['request']['url']
-                    entry_id = f"{request_url}_{entry['startedDateTime']}"
+            for entry in proxy.har['log']['entries']:
+                request_url = entry['request']['url']
+                entry_id = f"{request_url}_{entry['startedDateTime']}"
+                
+                if entry_id not in processed_entries and target_url in request_url:
+                    request_count += 1
+                    print(f"\n=== API Request #{request_count} ===")
+                    print(f"URL: {request_url}")
+                    print(f"Method: {entry['request']['method']}")
+                    print(f"Time: {time.strftime('%H:%M:%S')}")
                     
-                    if (entry_id not in processed_entries and 
-                        ('www.youtube.com/results?search_query' in request_url or 
-                         'www.youtube.com/youtubei/v1/search' in request_url)):
-                        
-                        search_request_count += 1
-                        print(f"\n找到第 {search_request_count} 个搜索请求: {request_url}")
-                        
-                        # 保存请求基本信息
-                        f.write(f"\n=== Search Request #{search_request_count} ===\n")
-                        f.write(f"URL: {request_url}\n")
-                        f.write(f"Method: {entry['request']['method']}\n")
-                        f.write(f"Time: {time.strftime('%H:%M:%S')}\n")
-                        
-                        # 获取响应内容
-                        response = entry['response']
-                        if response['content'].get('text'):
-                            try:
-                                # 获取响应文本
-                                response_text = response['content']['text']
-                                
-                                # 检查是否是base64编码
-                                if response['content'].get('encoding') == 'base64':
-                                    response_text = base64.b64decode(response_text)
-                                
-                                # 检查是否是br压缩
-                                try:
-                                    if any(h['name'].lower() == 'content-encoding' and 'br' in h['value'].lower() 
-                                          for h in entry['response']['headers']):
-                                        response_text = brotli.decompress(response_text)
-                                except Exception as e:
-                                    print(f"解压响应内容时出错: {str(e)}")
-                                
-                                # 如果是bytes，转换为字符串
-                                if isinstance(response_text, bytes):
-                                    response_text = response_text.decode('utf-8')
-                                
-                                # 尝试解析JSON
-                                try:
-                                    response_json = json.loads(response_text)
-                                    f.write("\nResponse:\n")
-                                    f.write(json.dumps(response_json, indent=2, ensure_ascii=False))
-                                except json.JSONDecodeError:
-                                    f.write("\nResponse (raw):\n")
-                                    f.write(response_text)
+                    # 获取响应内容
+                    response = entry['response']
+                    if response['content'].get('text'):
+                        try:
+                            # 使用工具类处理响应内容
+                            response_text = Utils.process_response_content(response)
+                            
+                            # 解析JSON响应
+                            response_json = json.loads(response_text)
+                            
+                            # 保存原始响应JSON
+                            # Utils.save_response_json(response_json, request_count, is_initial=(request_count == 1))
+                            
+                            # 根据页面类型选择不同的分析方法
+                            if 'youtube.com/hashtag' in current_url:
+                                Utils.analyze_and_store_shorts_json_response(response_json)
+                            else:
+                                if request_count == 1:
+                                    Utils.analyze_and_store_json_response_first(response_json)
+                                else:
+                                    Utils.analyze_and_store_json_response_else(response_json)
                                     
-                            except Exception as e:
-                                print(f"处理响应内容时出错: {str(e)}")
-                        else:
-                            f.write("\nNo response content available\n")
+                        except json.JSONDecodeError as e:
+                            print(f"JSON解析错误: {str(e)}")
+                        except Exception as e:
+                            print(f"处理API响应时出错: {str(e)}")
+                    else:
+                        print("No response content available")
                         
-                        f.write("\n" + "-" * 80 + "\n")
-                        processed_entries.add(entry_id)
+                    processed_entries.add(entry_id)
             
             new_height = driver.execute_script("return document.documentElement.scrollHeight")
             if new_height == last_height:
@@ -91,7 +91,7 @@ def scroll_and_analyze(driver, proxy, output_file, max_scrolls=5):
             break
     
     print(f"完成滚动，共执行 {scroll_count} 次")
-    print(f"总共找到 {search_request_count} 个搜索请求")
+    print(f"总共找到 {request_count} 个API请求")
 
 try:
     print("启动代理服务器...")
@@ -129,24 +129,45 @@ try:
     search_query = "baby+fashion+show"
     print(f"访问YouTube搜索页面: {search_query}")
     driver.get(f"https://www.youtube.com/results?search_query={search_query}")
+    # driver.get(f"https://www.youtube.com/hashtag/kidsfashion/shorts")
     print("等待页面加载...")
     time.sleep(3)  # 等待初始页面加载
     
-    # 创建输出文件
-    output_file = f"search_requests_{time.strftime('%Y%m%d_%H%M%S')}.txt"
-    print(f"创建输出文件: {output_file}")
+    # 判断当前URL类型
+    current_url = driver.current_url
+    if 'youtube.com/hashtag' not in current_url:
+        # 只有在非hashtag页面才点击Shorts按钮
+        try:
+            shorts_button = driver.find_element("xpath", 
+                "/html/body/ytd-app/div[1]/ytd-page-manager/ytd-search/div[1]/div/ytd-search-header-renderer/div[1]/yt-chip-cloud-renderer/div/div[2]/iron-selector/yt-chip-cloud-chip-renderer[2]/yt-formatted-string")
+            print("找到 Shorts 按钮")
+            
+            if shorts_button.text == "Shorts":
+                shorts_button.click()
+                print("已点击 Shorts 按钮")
+                time.sleep(3)  # 等待筛选结果加载
+            else:
+                print(f"按钮文字不匹配，期望 'Shorts'，实际是 '{shorts_button.text}'")
+        except Exception as e:
+            print(f"点击 Shorts 按钮时出错: {str(e)}")
+    else:
+        print("当前为hashtag页面，无需点击Shorts按钮")
     
     # 执行滚动和分析
     print("开始执行滚动和分析...")
-    scroll_and_analyze(driver, proxy, output_file)
+    scroll_and_analyze(driver, proxy)
     
-    print(f"所有响应内容已保存到文件：{output_file}")
+    print("\n任务完成,准备清理资源...")
     
 except Exception as e:
     print(f"程序执行出错: {str(e)}")
     
 finally:
     print("清理资源...")
+    if 'driver' in locals():
+        driver.quit()
+        print("浏览器已关闭")
     if 'server' in locals():
         server.stop()
         print("代理服务器已停止")
+    print("程序结束")

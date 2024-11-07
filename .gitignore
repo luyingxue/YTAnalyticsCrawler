@@ -59,3 +59,13 @@ htmlcov/
 
 # 搜索请求记录文件
 search_requests*.txt
+
+# 测试示例文件
+demo_*.html
+demo_*.json
+
+# 忽略所有response_json开头的JSON文件
+response_json_*.json
+
+# 忽略YouTube视频数据CSV文件
+youtube_videos.csv

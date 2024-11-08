@@ -50,19 +50,6 @@ class Utils:
         output_file = "youtube_videos.csv"
         
         try:
-            # 转换时间格式和观看次数
-            if isinstance(video_data, list):
-                for item in video_data:
-                    if 'published_time_text' in item:
-                        item['published_time_text'] = Utils.convert_relative_time(item['published_time_text'])
-                    if 'viewCountText' in item:
-                        item['viewCountText'] = Utils.convert_view_count(item['viewCountText'])
-            else:
-                if 'published_time_text' in video_data:
-                    video_data['published_time_text'] = Utils.convert_relative_time(video_data['published_time_text'])
-                if 'viewCountText' in video_data:
-                    video_data['viewCountText'] = Utils.convert_view_count(video_data['viewCountText'])
-            
             # 确定表头字段
             if isinstance(video_data, list):
                 fieldnames = video_data[0].keys() if video_data else []
@@ -85,7 +72,7 @@ class Utils:
                     print(f"保存了 {len(video_data)} 条视频数据到CSV文件")
                 else:
                     writer.writerow(video_data)
-                    print(f"保存了视频 {video_data.get('videoId')} 的数据到CSV文件")
+                    print(f"保存了视频 {video_data.get('video_id')} 的数据到CSV文件")
                 
         except Exception as e:
             print(f"保存视频数据到CSV文件时出错: {str(e)}")
@@ -124,19 +111,14 @@ class Utils:
                 continue
                 
             video_data = {
-                'videoId': video_id,
-                'video_url': f'https://www.youtube.com/watch?v={video_id}',
-                'cover_url': f'https://i.ytimg.com/vi/{video_id}/frame0.jpg',
+                'video_id': video_id,
                 'title': videoRenderer.get('title', {}).get('runs', [{}])[0].get('text', ''),
-                'snippet_text': ''.join(run.get('text', '') for snippet in videoRenderer.get('detailedMetadataSnippets', []) 
-                                        for run in snippet.get('snippetText', {}).get('runs', [])),
-                'channel_name': videoRenderer.get('longBylineText', {}).get('runs', [{}])[0].get('text', ''),
-                'channel_id': videoRenderer.get('longBylineText', {}).get('runs', [{}])[0].get('navigationEndpoint', {}).get('browseEndpoint', {}).get('browseId', ''),
-                'channel_url': f"https://www.youtube.com{videoRenderer.get('longBylineText', {}).get('runs', [{}])[0].get('navigationEndpoint', {}).get('browseEndpoint', {}).get('canonicalBaseUrl', '')}",
-                'published_time_text': videoRenderer.get('publishedTimeText', {}).get('simpleText', ''),
-                'lengthText': videoRenderer.get('lengthText', {}).get('simpleText', ''),
-                'viewCountText': videoRenderer.get('viewCountText', {}).get('simpleText', ''),
-                'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
+                'view_count': Utils.convert_view_count(videoRenderer.get('viewCountText', {}).get('simpleText', '')),
+                'published_date': Utils.convert_relative_time(videoRenderer.get('publishedTimeText', {}).get('simpleText', '')),
+                'crawl_date': time.strftime('%Y-%m-%d'),
+                'channel_id': videoRenderer.get('longBylineText', {}).get('runs', [{}])[0] \
+                    .get('navigationEndpoint', {}).get('browseEndpoint', {}).get('browseId', ''),
+                'channel_name': videoRenderer.get('longBylineText', {}).get('runs', [{}])[0].get('text', '')
             }
             
             results.append(video_data)
@@ -177,25 +159,13 @@ class Utils:
                 video_id = renderer['videoId']
                 
                 video_data = {
-                    'videoId': video_id,
-                    'video_url': f'https://www.youtube.com/watch?v={video_id}',
-                    'cover_url': f'https://i.ytimg.com/vi/{video_id}/frame0.jpg',
+                    'video_id': video_id,
                     'title': renderer['title']['runs'][0]['text'],
-                    'snippet_text': ''.join(
-                        run['text'] 
-                        for snippet in renderer.get('detailedMetadataSnippets', []) 
-                        for run in snippet.get('snippetText', {}).get('runs', [])
-                    ),
-                    'channel_name': renderer['longBylineText']['runs'][0]['text'],
-                    'channel_id': renderer['longBylineText']['runs'][0] \
-                        ['navigationEndpoint']['browseEndpoint']['browseId'],
-                    'channel_url': f"https://www.youtube.com" + \
-                        renderer['longBylineText']['runs'][0] \
-                        ['navigationEndpoint']['browseEndpoint']['canonicalBaseUrl'],
-                    'published_time_text': renderer['publishedTimeText']['simpleText'],
-                    'lengthText': renderer['lengthText']['simpleText'],
-                    'viewCountText': renderer['viewCountText']['simpleText'],
-                    'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
+                    'view_count': Utils.convert_view_count(renderer['viewCountText']['simpleText']),
+                    'published_date': Utils.convert_relative_time(renderer['publishedTimeText']['simpleText']),
+                    'crawl_date': time.strftime('%Y-%m-%d'),
+                    'channel_id': renderer['longBylineText']['runs'][0]['navigationEndpoint']['browseEndpoint']['browseId'],
+                    'channel_name': renderer['longBylineText']['runs'][0]['text']
                 }
                 
                 results.append(video_data)
@@ -234,6 +204,23 @@ class Utils:
             print(f"已保存响应JSON到文件: {filename}")
         except Exception as e:
             print(f"保存响应JSON时出错: {str(e)}")
+
+    @staticmethod
+    def process_shorts_title(title_str):
+        """
+        处理Shorts视频标题，移除观看次数和固定后缀
+        Args:
+            title_str: 原始标题字符串
+        Returns:
+            str: 处理后的标题
+        """
+        try:
+            # 使用正则表达式匹配", 数字[,数字]*[.数字]?[万]?次观看 - 播放 Shorts 短视频"
+            import re
+            return re.sub(r', (?:\d{1,3}(?:,\d{3})*|\d+(?:\.\d+)?万?)次观看 - 播放 Shorts 短视频$', '', title_str)
+        except Exception as e:
+            print(f"处理标题时出错: {str(e)}")
+            return title_str
 
     @staticmethod
     def analyze_and_store_shorts_json_response(json_data):
@@ -283,13 +270,11 @@ class Utils:
                     
                 # 提取视频信息
                 video_data = {
-                    'videoId': video_id,
-                    'video_url': f'https://www.youtube.com/shorts/{video_id}',
-                    'cover_url': f'https://i.ytimg.com/vi/{video_id}/frame0.jpg',
-                    'title': video_content.get('accessibilityText', ''),
-                    'view_count': video_content.get('overlayMetadata', {}) \
-                                 .get('secondaryText', {}).get('content', ''),
-                    'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
+                    'video_id': video_id,
+                    'title': Utils.process_shorts_title(video_content.get('accessibilityText', '')),
+                    'view_count': Utils.convert_view_count(video_content.get('overlayMetadata', {}) \
+                                 .get('secondaryText', {}).get('content', '')),
+                    'crawl_date': time.strftime('%Y-%m-%d')
                 }
                 
                 results.append(video_data)
@@ -311,11 +296,11 @@ class Utils:
     @staticmethod
     def convert_relative_time(relative_time_str):
         """
-        将相对时间字符串转换为具体时间
+        将相对时间字符串转换为日期
         Args:
             relative_time_str: 相对时间字符串，如"1个月前"、"2周前"、"3天前"等
         Returns:
-            str: 转换后的时间字符串，格式为'%Y-%m-%d %H:%M:%S'
+            str: 转换后的日期字符串，格式为'%Y-%m-%d'
         """
         try:
             # 获取当前时间
@@ -323,13 +308,13 @@ class Utils:
             
             # 解析数字和单位
             if not relative_time_str:
-                return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))
+                return time.strftime('%Y-%m-%d', time.localtime(current_time))
                 
             # 提取数字和单位
             import re
             match = re.match(r'(\d+)?(.*?)前', relative_time_str)
             if not match:
-                return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))
+                return time.strftime('%Y-%m-%d', time.localtime(current_time))
                 
             number = int(match.group(1)) if match.group(1) else 1
             unit = match.group(2)
@@ -354,19 +339,19 @@ class Utils:
             # 计算具体时间
             target_time = current_time - seconds
             
-            # 转换为指定格式
-            return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(target_time))
+            # 只返回日期部分
+            return time.strftime('%Y-%m-%d', time.localtime(target_time))
             
         except Exception as e:
             print(f"时间转换出错: {str(e)}")
-            return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))
+            return time.strftime('%Y-%m-%d', time.localtime(current_time))
 
     @staticmethod
     def convert_view_count(view_count_str):
         """
         将观看次数字符串转换为整数
         Args:
-            view_count_str: 观看次数字符串，如"102,717次观看"
+            view_count_str: 观看次数字符串，如"102,717次观看"或"1万次观看"
         Returns:
             int: 转换后的整数
         """
@@ -374,12 +359,17 @@ class Utils:
             if not view_count_str:
                 return 0
                 
-            # 移除"次观看"并替换逗号
-            number_str = view_count_str.replace('次观看', '').replace(',', '')
+            # 移除"次观看"
+            number_str = view_count_str.replace('次观看', '')
             
-            # 转换为整数
-            return int(number_str)
+            # 处理"万"单位
+            if '万' in number_str:
+                number = float(number_str.replace('万', ''))
+                return int(number * 10000)
             
+            # 处理普通数字（带逗号的）
+            return int(number_str.replace(',', ''))
+                
         except Exception as e:
             print(f"观看次数转换出错: {str(e)}")
             return 0

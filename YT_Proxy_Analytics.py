@@ -11,6 +11,9 @@ def scroll_and_analyze(driver, proxy, max_scrolls=2):
     last_height = driver.execute_script("return document.documentElement.scrollHeight")
     print("初始页面高度:", last_height)
     
+    # 添加一个变量来标记是否是Shorts内容
+    is_shorts_content = False
+    
     # 获取当前页面URL并判断类型
     current_url = driver.current_url
     print(f"当前页面URL: {current_url}")
@@ -24,6 +27,7 @@ def scroll_and_analyze(driver, proxy, max_scrolls=2):
         # 话题标签页面
         target_url = 'www.youtube.com/youtubei/v1/browse'
         print("检测到话题标签页面，将捕获浏览API请求")
+        is_shorts_content = True
     else:
         # 其他页面，可以继续添加其他类型
         print(f"未识别的页面类型: {current_url}")
@@ -60,8 +64,8 @@ def scroll_and_analyze(driver, proxy, max_scrolls=2):
                             # 保存原始响应JSON
                             # Utils.save_response_json(response_json, request_count, is_initial=(request_count == 1))
                             
-                            # 根据页面类型选择不同的分析方法
-                            if 'youtube.com/hashtag' in current_url:
+                            # 根据内容类型选择不同的分析方法
+                            if is_shorts_content:
                                 Utils.analyze_and_store_shorts_json_response(response_json)
                             else:
                                 if request_count == 1:
@@ -133,10 +137,11 @@ try:
     print("等待页面加载...")
     time.sleep(3)  # 等待初始页面加载
     
-    # 判断当前URL类型
+    # 获取当前URL
     current_url = driver.current_url
+    
+    # 在点击Shorts按钮后更新标记
     if 'youtube.com/hashtag' not in current_url:
-        # 只有在非hashtag页面才点击Shorts按钮
         try:
             shorts_button = driver.find_element("xpath", 
                 "/html/body/ytd-app/div[1]/ytd-page-manager/ytd-search/div[1]/div/ytd-search-header-renderer/div[1]/yt-chip-cloud-renderer/div/div[2]/iron-selector/yt-chip-cloud-chip-renderer[2]/yt-formatted-string")
@@ -150,8 +155,6 @@ try:
                 print(f"按钮文字不匹配，期望 'Shorts'，实际是 '{shorts_button.text}'")
         except Exception as e:
             print(f"点击 Shorts 按钮时出错: {str(e)}")
-    else:
-        print("当前为hashtag页面，无需点击Shorts按钮")
     
     # 执行滚动和分析
     print("开始执行滚动和分析...")

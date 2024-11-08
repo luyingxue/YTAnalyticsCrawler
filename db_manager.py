@@ -2,8 +2,8 @@ import mysql.connector
 from mysql.connector import Error
 import time
 from datetime import datetime
-import logging
 import configparser
+from log_manager import LogManager
 
 class DBManager:
     """数据库管理类，处理与MySQL的所有交互"""
@@ -22,31 +22,27 @@ class DBManager:
         }
         
         self.connection = None
-        self.setup_logging()
+        self.logger = LogManager().get_logger('DBManager')
         
-    def setup_logging(self):
-        """设置日志"""
-        logging.basicConfig(
-            filename='db_operations.log',
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s'
-        )
+    def log(self, message, level='INFO'):
+        """输出日志"""
+        LogManager.log(level, message)
         
     def connect(self):
         """建立数据库连接"""
         try:
             if self.connection is None or not self.connection.is_connected():
                 self.connection = mysql.connector.connect(**self.connection_config)
-                logging.info("数据库连接成功")
+                self.log("数据库连接成功")
         except Error as e:
-            logging.error(f"数据库连接错误: {e}")
+            self.log(f"数据库连接错误: {str(e)}", 'ERROR')
             raise
             
     def disconnect(self):
         """关闭数据库连接"""
         if self.connection and self.connection.is_connected():
             self.connection.close()
-            logging.info("数据库连接已关闭")
+            self.log("数据库连接已关闭")
             
     def save_videos(self, videos):
         """
@@ -88,17 +84,17 @@ class DBManager:
                 
                 try:
                     cursor.execute(insert_query, data)
-                    logging.info(f"保存视频数据: {video.get('video_id')}")
+                    self.log(f"保存视频数据: {video.get('video_id')}")
                 except Error as e:
-                    logging.error(f"保存视频数据出错: {video.get('video_id')} - {str(e)}")
+                    self.log(f"保存视频数据出错: {video.get('video_id')} - {str(e)}", 'ERROR')
                     continue
             
             # 提交事务
             self.connection.commit()
-            logging.info(f"成功保存 {len(videos)} 条视频数据")
+            self.log(f"成功保存 {len(videos)} 条视频数据")
             
         except Error as e:
-            logging.error(f"数据库操作错误: {str(e)}")
+            self.log(f"数据库操作错误: {str(e)}", 'ERROR')
             if self.connection:
                 self.connection.rollback()
             raise
@@ -126,7 +122,7 @@ class DBManager:
             return result
             
         except Error as e:
-            logging.error(f"查询视频信息出错: {str(e)}")
+            self.log(f"查询视频信息出错: {str(e)}", 'ERROR')
             raise
         finally:
             if cursor:
@@ -157,7 +153,7 @@ class DBManager:
             return results
             
         except Error as e:
-            logging.error(f"查询视频列表出错: {str(e)}")
+            self.log(f"查询视频列表出错: {str(e)}", 'ERROR')
             raise
         finally:
             if cursor:
@@ -190,7 +186,7 @@ class DBManager:
             return results
             
         except Error as e:
-            logging.error(f"获取统计数据出错: {str(e)}")
+            self.log(f"获取统计数据出错: {str(e)}", 'ERROR')
             raise
         finally:
             if cursor:
@@ -236,16 +232,31 @@ class DBManager:
             self.disconnect()
             
     def get_active_search_url(self):
-        """获取一个活跃的搜索URL"""
+        """获取一个活跃的索URL"""
         try:
             self.connect()
             cursor = self.connection.cursor(dictionary=True)
             
-            # 修改SQL语句，使用COALESCE和IS NULL来处理NULL值
+            # 检查是否所有URL都已在今天抓取过
+            check_query = """
+                SELECT COUNT(*) as total_count,
+                       SUM(CASE WHEN DATE(last_crawl_time) = CURRENT_DATE THEN 1 ELSE 0 END) as today_count
+                FROM search_urls
+                WHERE is_active = TRUE
+            """
+            cursor.execute(check_query)
+            result = cursor.fetchone()
+            
+            if result['total_count'] > 0 and result['total_count'] == result['today_count']:
+                self.log("所有URL今天都已经抓取过了")
+                return None
+            
+            # 获取今天未抓取的URL
             query = """
                 SELECT id, url, description 
                 FROM search_urls 
                 WHERE is_active = TRUE 
+                AND (DATE(last_crawl_time) != CURRENT_DATE OR last_crawl_time IS NULL)
                 ORDER BY COALESCE(last_crawl_time, '1970-01-01') ASC
                 LIMIT 1
             """
@@ -265,8 +276,93 @@ class DBManager:
             return result
             
         except Error as e:
-            logging.error(f"获取搜索URL出错: {str(e)}")
+            self.log(f"获取搜索URL出错: {str(e)}", 'ERROR')
             raise
+        finally:
+            if cursor:
+                cursor.close()
+            self.disconnect()
+            
+    def batch_insert_videos(self, video_list, batch_size=1000):
+        """批量插入视频数据，过滤黑名单频道"""
+        if not video_list:
+            return (0, 0)
+            
+        try:
+            self.connect()
+            cursor = self.connection.cursor()
+            
+            self.log(f"开始批量插入 {len(video_list)} 条数据")
+            
+            # 修改插入SQL，添加黑名单过滤
+            insert_query = """
+                INSERT INTO videos (
+                    video_id, title, view_count, published_date, 
+                    crawl_date, channel_id, channel_name
+                )
+                SELECT t.* FROM (
+                    SELECT %s as video_id, %s as title, %s as view_count,
+                           %s as published_date, %s as crawl_date,
+                           %s as channel_id, %s as channel_name
+                    FROM dual
+                ) t
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM channel_blacklist b 
+                    WHERE b.channel_id = t.channel_id
+                )
+                ON DUPLICATE KEY UPDATE
+                    title = VALUES(title),
+                    view_count = VALUES(view_count)
+            """
+            
+            inserted = 0
+            skipped = 0
+            blacklisted = 0
+            
+            # 分批处理数据
+            for i in range(0, len(video_list), batch_size):
+                batch = video_list[i:i + batch_size]
+                values = []
+                
+                for video in batch:
+                    data = (
+                        video.get('video_id'),
+                        video.get('title'),
+                        video.get('view_count'),
+                        video.get('published_date'),
+                        video.get('crawl_date'),
+                        video.get('channel_id'),
+                        video.get('channel_name')
+                    )
+                    values.append(data)
+                
+                try:
+                    # 执行批量插入
+                    cursor.executemany(insert_query, values)
+                    
+                    # 统计结果
+                    inserted += cursor.rowcount
+                    skipped += len(values) - cursor.rowcount
+                    
+                    # 提交事务
+                    self.connection.commit()
+                    
+                    self.log(f"批量插入成功: {cursor.rowcount}/{len(values)} 条记录")
+                    
+                except Error as e:
+                    self.log(f"批量插入出错: {str(e)}", 'ERROR')
+                    self.connection.rollback()
+                    continue
+                    
+            self.log(f"批量插入完成: 成功 {inserted} 条，跳过 {skipped} 条")
+            return (inserted, skipped)
+            
+        except Error as e:
+            self.log(f"批量插入过程出错: {str(e)}", 'ERROR')
+            if self.connection:
+                self.connection.rollback()
+            raise
+            
         finally:
             if cursor:
                 cursor.close()

@@ -7,11 +7,19 @@ import os
 import csv
 
 from db_manager import DBManager
+from log_manager import LogManager
 
 class Utils:
     """
     通用工具类，包含各种辅助方法
     """
+    
+    logger = LogManager().get_logger('Utils')
+    
+    @staticmethod
+    def log(message, level='INFO'):
+        """输出日志"""
+        LogManager.log(level, message)
     
     @staticmethod
     def process_response_content(response):
@@ -22,26 +30,28 @@ class Utils:
         Returns:
             str: 处理后的响应文本
         """
-        response_text = response['content']['text']
-        
-        # 检查是否是base64编码
-        if response['content'].get('encoding') == 'base64':
-            response_text = base64.b64decode(response_text)
-        
-        # 检查是否是br压缩
         try:
+            response_text = response['content']['text']
+            
+            if response['content'].get('encoding') == 'base64':
+                response_text = base64.b64decode(response_text)
+                Utils.log("已解码base64内容")
+            
             if any(h['name'].lower() == 'content-encoding' and 'br' in h['value'].lower() 
                   for h in response['headers']):
                 response_text = brotli.decompress(response_text)
+                Utils.log("已解压brotli内容")
+            
+            if isinstance(response_text, bytes):
+                response_text = response_text.decode('utf-8')
+                Utils.log("已将bytes转换为字符串")
+            
+            return response_text
+            
         except Exception as e:
-            print(f"解压响应内容时出错: {str(e)}")
-        
-        # 如果是bytes，转换为字符串
-        if isinstance(response_text, bytes):
-            response_text = response_text.decode('utf-8')
-        
-        return response_text
-
+            Utils.log(f"处理响应内容时出错: {str(e)}", 'ERROR')
+            raise
+    
     @staticmethod
     def save_video_data(video_data):
         """
@@ -51,17 +61,18 @@ class Utils:
         """
         try:
             db = DBManager()
-            db.save_videos(video_data)
             
-            # 打印保存信息
-            if isinstance(video_data, list):
-                print(f"保存了 {len(video_data)} 条视频数据到数据库")
-            else:
-                print(f"保存了视频 {video_data.get('video_id')} 的数据到数据库")
+            if not isinstance(video_data, list):
+                video_data = [video_data]
+                
+            Utils.log(f"准备保存 {len(video_data)} 条视频数据")
+            inserted, skipped = db.batch_insert_videos(video_data)
+            Utils.log(f"数据保存完成: 成功 {inserted} 条，跳过 {skipped} 条")
                 
         except Exception as e:
-            print(f"保存到MySQL时出错: {str(e)}")
-
+            Utils.log(f"保存数据时出错: {str(e)}", 'ERROR')
+            raise
+    
     @staticmethod
     def analyze_and_store_json_response_first(json_data):
         """
@@ -107,9 +118,9 @@ class Utils:
             }
             
             results.append(video_data)
-            print(f"\n视频 {video_id} 的信息:")
-            for key, value in video_data.items():
-                print(f"{key}: {value}")
+            # print(f"\n视频 {video_id} 的信息:")
+            # for key, value in video_data.items():
+            #     print(f"{key}: {value}")
         
         # 批量保存数据
         if results:
@@ -154,9 +165,9 @@ class Utils:
                 }
                 
                 results.append(video_data)
-                print(f"\n视频 {video_id} 的信息:")
-                for key, value in video_data.items():
-                    print(f"{key}: {value}")
+                # print(f"\n视频 {video_id} 的信息:")
+                # for key, value in video_data.items():
+                #     print(f"{key}: {value}")
                 
             except Exception as e:
                 print(f"处理视频时出错: {str(e)}")
@@ -263,9 +274,9 @@ class Utils:
                 }
                 
                 results.append(video_data)
-                print(f"\n视频 {video_id} 的信息:")
-                for key, value in video_data.items():
-                    print(f"{key}: {value}")
+                # print(f"\n视频 {video_id} 的信息:")
+                # for key, value in video_data.items():
+                #     print(f"{key}: {value}")
                     
             except Exception as e:
                 print(f"处理视频项时出错: {str(e)}")
@@ -344,17 +355,16 @@ class Utils:
             if not view_count_str:
                 return 0
                 
-            # 移除"次观看"
+            # Utils.log(f"转换观看次数: {view_count_str}")
+            
             number_str = view_count_str.replace('次观看', '')
             
-            # 处理"万"单位
             if '万' in number_str:
                 number = float(number_str.replace('万', ''))
                 return int(number * 10000)
             
-            # 处理普通数字（带逗号的）
             return int(number_str.replace(',', ''))
                 
         except Exception as e:
-            print(f"观看次数转换出错: {str(e)}")
+            Utils.log(f"转换观看次数时出错: {str(e)}", 'ERROR')
             return 0

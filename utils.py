@@ -6,6 +6,8 @@ import time
 import os
 import csv
 
+from db_manager import DBManager
+
 class Utils:
     """
     通用工具类，包含各种辅助方法
@@ -43,39 +45,22 @@ class Utils:
     @staticmethod
     def save_video_data(video_data):
         """
-        将视频数据保存到CSV文件
+        将视频数据保存到MySQL数据库
         Args:
             video_data: 视频数据字典或列表
         """
-        output_file = "youtube_videos.csv"
-        
         try:
-            # 确定表头字段
+            db = DBManager()
+            db.save_videos(video_data)
+            
+            # 打印保存信息
             if isinstance(video_data, list):
-                fieldnames = video_data[0].keys() if video_data else []
+                print(f"保存了 {len(video_data)} 条视频数据到数据库")
             else:
-                fieldnames = video_data.keys()
-            
-            # 检查文件是否存在，不存在则创建并写入表头
-            file_exists = os.path.isfile(output_file)
-            
-            with open(output_file, 'a', newline='', encoding='utf-8-sig') as f:
-                writer = csv.DictWriter(f, fieldnames=fieldnames)
-                
-                # 如果文件不存在，写入表头
-                if not file_exists:
-                    writer.writeheader()
-                
-                # 写入数据
-                if isinstance(video_data, list):
-                    writer.writerows(video_data)
-                    print(f"保存了 {len(video_data)} 条视频数据到CSV文件")
-                else:
-                    writer.writerow(video_data)
-                    print(f"保存了视频 {video_data.get('video_id')} 的数据到CSV文件")
+                print(f"保存了视频 {video_data.get('video_id')} 的数据到数据库")
                 
         except Exception as e:
-            print(f"保存视频数据到CSV文件时出错: {str(e)}")
+            print(f"保存到MySQL时出错: {str(e)}")
 
     @staticmethod
     def analyze_and_store_json_response_first(json_data):

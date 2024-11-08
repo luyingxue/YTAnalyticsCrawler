@@ -7,8 +7,9 @@
 - 支持搜索页面的Shorts视频抓取
 - 支持话题标签(hashtag)页面的Shorts视频抓取
 - 自动处理页面滚动加载
-- 数据保存为CSV格式，方便后续分析
-- 支持视频基本信息的提取（标题、观看次数、URL等）
+- 数据直接保存到MySQL数据库
+- 支持视频基本信息的提取（标题、观看次数等）
+- 支持数据去重（同一天相同视频只保存一次）
 
 ## 环境要求
 
@@ -16,8 +17,9 @@
 - Chrome浏览器
 - BrowserMob Proxy 2.1.4
 - Selenium WebDriver
+- MySQL 8.0+
 - 相关Python包（见requirements.txt）
 
 ## 安装步骤
 
-1. 克隆仓库： 
+1. 克隆仓库：

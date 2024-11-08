@@ -4,6 +4,7 @@ from selenium.webdriver.chrome.options import Options
 import time
 import json
 from utils import Utils
+from db_manager import DBManager
 
 def scroll_and_analyze(driver, proxy, max_scrolls=2):
     processed_entries = set()
@@ -129,19 +130,27 @@ try:
         'captureCompression': True
     })
     
-    # 访问YouTube搜索页面
-    search_query = "baby+fashion+show"
-    print(f"访问YouTube搜索页面: {search_query}")
-    driver.get(f"https://www.youtube.com/results?search_query={search_query}")
-    # driver.get(f"https://www.youtube.com/hashtag/kidsfashion/shorts")
-    print("等待页面加载...")
-    time.sleep(3)  # 等待初始页面加载
-    
-    # 获取当前URL
-    current_url = driver.current_url
+    # 从数据库获取搜索URL
+    try:
+        db = DBManager()
+        url_data = db.get_active_search_url()
+        if not url_data:
+            raise Exception("没有可用的搜索URL")
+            
+        target_url = url_data['url']
+        print(f"使用URL: {target_url} ({url_data['description']})")
+        
+        # 访问YouTube页面
+        driver.get(target_url)
+        print("等待页面加载...")
+        time.sleep(3)  # 等待初始页面加载
+        
+    except Exception as e:
+        print(f"获取搜索URL时出错: {str(e)}")
+        raise
     
     # 在点击Shorts按钮后更新标记
-    if 'youtube.com/hashtag' not in current_url:
+    if 'youtube.com/hashtag' not in driver.current_url:
         try:
             shorts_button = driver.find_element("xpath", 
                 "/html/body/ytd-app/div[1]/ytd-page-manager/ytd-search/div[1]/div/ytd-search-header-renderer/div[1]/yt-chip-cloud-renderer/div/div[2]/iron-selector/yt-chip-cloud-chip-renderer[2]/yt-formatted-string")

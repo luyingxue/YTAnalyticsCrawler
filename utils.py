@@ -3,16 +3,11 @@ import brotli
 import re
 import json
 import time
-import os
-import csv
-
 from db_manager import DBManager
 from log_manager import LogManager
 
 class Utils:
-    """
-    通用工具类，包含各种辅助方法
-    """
+    """通用工具类，包含各种辅助方法"""
     
     logger = LogManager().get_logger('Utils')
     
@@ -53,36 +48,84 @@ class Utils:
             raise
     
     @staticmethod
-    def save_video_data(video_data):
+    def convert_view_count(view_count_str):
         """
-        将视频数据保存到MySQL数据库
+        将观看次数字符串转换为整数
         Args:
-            video_data: 视频数据字典或列表
+            view_count_str: 观看次数字符串，如"102,717次观看"或"1万次观看"或"无人观看"
+        Returns:
+            int: 转换后的整数
         """
         try:
-            db = DBManager()
+            if not view_count_str:
+                return 0
             
-            if not isinstance(video_data, list):
-                video_data = [video_data]
-                
-            Utils.log(f"准备保存 {len(video_data)} 条视频数据")
-            inserted, skipped = db.batch_insert_videos(video_data)
-            Utils.log(f"数据保存完成: 成功 {inserted} 条，跳过 {skipped} 条")
+            # 处理"无人观看"的情况
+            if view_count_str == '无人观看':
+                return 0
+            
+            number_str = view_count_str.replace('次观看', '')
+            
+            if '万' in number_str:
+                number = float(number_str.replace('万', ''))
+                return int(number * 10000)
+            
+            return int(number_str.replace(',', ''))
                 
         except Exception as e:
-            Utils.log(f"保存数据时出错: {str(e)}", 'ERROR')
-            raise
+            Utils.log(f"转换观看次数时出错: {str(e)}", 'ERROR')
+            return 0
+    
+    @staticmethod
+    def convert_relative_time(relative_time_str):
+        """
+        将相对时间字符串转换为日期
+        Args:
+            relative_time_str: 相对时间字符串，如"1个月前"、"2周前"、"3天前"等
+        Returns:
+            str: 转换后的日期字符串，格式为'%Y-%m-%d'
+        """
+        try:
+            current_time = time.time()
+            
+            if not relative_time_str:
+                return time.strftime('%Y-%m-%d', time.localtime(current_time))
+                
+            match = re.match(r'(\d+)?(.*?)前', relative_time_str)
+            if not match:
+                return time.strftime('%Y-%m-%d', time.localtime(current_time))
+                
+            number = int(match.group(1)) if match.group(1) else 1
+            unit = match.group(2)
+            
+            seconds = 0
+            if '年' in unit:
+                seconds = number * 365 * 24 * 3600
+            elif '个月' in unit:
+                seconds = number * 30 * 24 * 3600
+            elif '周' in unit:
+                seconds = number * 7 * 24 * 3600
+            elif '天' in unit:
+                seconds = number * 24 * 3600
+            elif '小时' in unit:
+                seconds = number * 3600
+            elif '分钟' in unit:
+                seconds = number * 60
+            elif '秒' in unit:
+                seconds = number
+            
+            target_time = current_time - seconds
+            return time.strftime('%Y-%m-%d', time.localtime(target_time))
+            
+        except Exception as e:
+            Utils.log(f"时间转换出错: {str(e)}", 'ERROR')
+            return time.strftime('%Y-%m-%d', time.localtime(current_time))
     
     @staticmethod
     def analyze_and_store_json_response_first(json_data):
-        """
-        分析并存储JSON响应数据
-        Args:
-            json_data: JSON格式的响应数据（已解析为Python对象）
-        """
-        print("\n分析JSON响应...")
+        """分析并存储第一次JSON响应数据"""
+        Utils.log("\n分析JSON响应...")
         
-        # 获取有效内容
         effective_contents = json_data.get('onResponseReceivedCommands', [{}])[0] \
                        .get('reloadContinuationItemsCommand', {}) \
                        .get('continuationItems', [{}])[0] \
@@ -94,8 +137,7 @@ class Utils:
                        .get('contents', [])
 
         results = []
-        
-        print(f"\n找到 {len(effective_contents)} 个视频内容")
+        Utils.log(f"\n找到 {len(effective_contents)} 个视频内容")
         
         for item in effective_contents:
             videoRenderer = item.get('videoRenderer', {})
@@ -114,38 +156,32 @@ class Utils:
                 'crawl_date': time.strftime('%Y-%m-%d'),
                 'channel_id': videoRenderer.get('longBylineText', {}).get('runs', [{}])[0] \
                     .get('navigationEndpoint', {}).get('browseEndpoint', {}).get('browseId', ''),
-                'channel_name': videoRenderer.get('longBylineText', {}).get('runs', [{}])[0].get('text', '')
+                'channel_name': videoRenderer.get('longBylineText', {}).get('runs', [{}])[0].get('text', ''),
+                'canonical_base_url': videoRenderer.get('longBylineText', {}).get('runs', [{}])[0] \
+                    .get('navigationEndpoint', {}).get('browseEndpoint', {}).get('canonicalBaseUrl', '')
             }
             
             results.append(video_data)
-            # print(f"\n视频 {video_id} 的信息:")
-            # for key, value in video_data.items():
-            #     print(f"{key}: {value}")
         
-        # 批量保存数据
         if results:
-            Utils.save_video_data(results)
+            db = DBManager()
+            db.batch_insert_videos(results)
         
-        print(f"\n总共解析了 {len(results)} 个视频的数据")
+        Utils.log(f"\n总共解析了 {len(results)} 个视频的数据")
         return results
     
     @staticmethod
     def analyze_and_store_json_response_else(json_data):
-        """
-        分析并存储JSON响应数据
-        Args:
-            json_data: JSON格式的响应数据（已解析为Python对象）
-        """
-        print("\n分析JSON响应...")
+        """分析并存储后续JSON响应数据"""
+        Utils.log("\n分析JSON响应...")
         
-        # 获取视频内容
         try:
             contents = json_data['onResponseReceivedCommands'][0] \
                 ['appendContinuationItemsAction']['continuationItems'][0] \
                 ['itemSectionRenderer']['contents']
-            print(f"\n找到 {len(contents)} 个视频内容")
+            Utils.log(f"\n找到 {len(contents)} 个视频内容")
         except (KeyError, IndexError):
-            print("未找到视频内容")
+            Utils.log("未找到视频内容")
             return []
 
         results = []
@@ -161,25 +197,23 @@ class Utils:
                     'published_date': Utils.convert_relative_time(renderer['publishedTimeText']['simpleText']),
                     'crawl_date': time.strftime('%Y-%m-%d'),
                     'channel_id': renderer['longBylineText']['runs'][0]['navigationEndpoint']['browseEndpoint']['browseId'],
-                    'channel_name': renderer['longBylineText']['runs'][0]['text']
+                    'channel_name': renderer['longBylineText']['runs'][0]['text'],
+                    'canonical_base_url': renderer['longBylineText']['runs'][0]['navigationEndpoint']['browseEndpoint']['canonicalBaseUrl']
                 }
                 
                 results.append(video_data)
-                # print(f"\n视频 {video_id} 的信息:")
-                # for key, value in video_data.items():
-                #     print(f"{key}: {value}")
                 
             except Exception as e:
-                print(f"处理视频时出错: {str(e)}")
+                Utils.log(f"处理视频时出错: {str(e)}")
                 continue
         
-        # 批量保存数据
         if results:
-            Utils.save_video_data(results)
+            db = DBManager()
+            db.batch_insert_videos(results)
         
-        print(f"\n总共解析了 {len(results)} 个视频的数据")
+        Utils.log(f"\n总共解析了 {len(results)} 个视频的数据")
         return results
-
+    
     @staticmethod
     def save_response_json(json_data, request_count, is_initial=False):
         """
@@ -197,174 +231,6 @@ class Utils:
         try:
             with open(filename, 'w', encoding='utf-8') as f:
                 json.dump(json_data, f, ensure_ascii=False, indent=2)
-            print(f"已保存响应JSON到文件: {filename}")
+            Utils.log(f"已保存响应JSON到文件: {filename}")
         except Exception as e:
-            print(f"保存响应JSON时出错: {str(e)}")
-
-    @staticmethod
-    def process_shorts_title(title_str):
-        """
-        处理Shorts视频标题，移除观看次数和固定后缀
-        Args:
-            title_str: 原始标题字符串
-        Returns:
-            str: 处理后的标题
-        """
-        try:
-            # 使用正则表达式匹配", 数字[,数字]*[.数字]?[万]?次观看 - 播放 Shorts 短视频"
-            import re
-            return re.sub(r', (?:\d{1,3}(?:,\d{3})*|\d+(?:\.\d+)?万?)次观看 - 播放 Shorts 短视频$', '', title_str)
-        except Exception as e:
-            print(f"处理标题时出错: {str(e)}")
-            return title_str
-
-    @staticmethod
-    def analyze_and_store_shorts_json_response(json_data):
-        """
-        分析并存储短视频JSON响应数据
-        Args:
-            json_data: JSON格式的响应数据（已解析为Python对象）
-        """
-        print("\n分析短视频JSON响应...")
-        
-        # 获取视频内容列表
-        try:
-            contents = json_data.get('onResponseReceivedActions', [])[0] \
-                        .get('appendContinuationItemsAction', {}) \
-                        .get('continuationItems', [])
-            
-            if not contents:
-                print("未找到视频内容")
-                return []
-                
-            print(f"\n找到 {len(contents)} 个内容项")
-        except Exception as e:
-            print(f"获取内容列表时出错: {str(e)}")
-            return []
-
-        results = []
-        
-        for item in contents:
-            try:
-                # 跳过continuation项
-                if 'continuationItemRenderer' in item:
-                    continue
-                    
-                # 获取视频信息
-                video_content = item.get('richItemRenderer', {}).get('content', {}) \
-                                .get('shortsLockupViewModel', {})
-                
-                if not video_content:
-                    continue
-                
-                # 从entityId中提取videoId (格式: "shorts-shelf-item-{videoId}")
-                entity_id = video_content.get('entityId', '')
-                video_id = entity_id.replace('shorts-shelf-item-', '')
-                
-                if not video_id:
-                    continue
-                    
-                # 提取视频信息
-                video_data = {
-                    'video_id': video_id,
-                    'title': Utils.process_shorts_title(video_content.get('accessibilityText', '')),
-                    'view_count': Utils.convert_view_count(video_content.get('overlayMetadata', {}) \
-                                 .get('secondaryText', {}).get('content', '')),
-                    'crawl_date': time.strftime('%Y-%m-%d')
-                }
-                
-                results.append(video_data)
-                # print(f"\n视频 {video_id} 的信息:")
-                # for key, value in video_data.items():
-                #     print(f"{key}: {value}")
-                    
-            except Exception as e:
-                print(f"处理视频项时出错: {str(e)}")
-                continue
-        
-        # 批量保存数据
-        if results:
-            Utils.save_video_data(results)
-        
-        print(f"\n总共解析了 {len(results)} 个视频的数据")
-        return results
-
-    @staticmethod
-    def convert_relative_time(relative_time_str):
-        """
-        将相对时间字符串转换为日期
-        Args:
-            relative_time_str: 相对时间字符串，如"1个月前"、"2周前"、"3天前"等
-        Returns:
-            str: 转换后的日期字符串，格式为'%Y-%m-%d'
-        """
-        try:
-            # 获取当前时间
-            current_time = time.time()
-            
-            # 解析数字和单位
-            if not relative_time_str:
-                return time.strftime('%Y-%m-%d', time.localtime(current_time))
-                
-            # 提取数字和单位
-            import re
-            match = re.match(r'(\d+)?(.*?)前', relative_time_str)
-            if not match:
-                return time.strftime('%Y-%m-%d', time.localtime(current_time))
-                
-            number = int(match.group(1)) if match.group(1) else 1
-            unit = match.group(2)
-            
-            # 转换单位到秒
-            seconds = 0
-            if '年' in unit:
-                seconds = number * 365 * 24 * 3600
-            elif '个月' in unit:
-                seconds = number * 30 * 24 * 3600
-            elif '周' in unit:
-                seconds = number * 7 * 24 * 3600
-            elif '天' in unit:
-                seconds = number * 24 * 3600
-            elif '小时' in unit:
-                seconds = number * 3600
-            elif '分钟' in unit:
-                seconds = number * 60
-            elif '秒' in unit:
-                seconds = number
-            
-            # 计算具体时间
-            target_time = current_time - seconds
-            
-            # 只返回日期部分
-            return time.strftime('%Y-%m-%d', time.localtime(target_time))
-            
-        except Exception as e:
-            print(f"时间转换出错: {str(e)}")
-            return time.strftime('%Y-%m-%d', time.localtime(current_time))
-
-    @staticmethod
-    def convert_view_count(view_count_str):
-        """
-        将观看次数字符串转换为整数
-        Args:
-            view_count_str: 观看次数字符串，如"102,717次观看"或"1万次观看"
-        Returns:
-            int: 转换后的整数
-        """
-        try:
-            if not view_count_str:
-                return 0
-                
-            # Utils.log(f"转换观看次数: {view_count_str}")
-            
-            number_str = view_count_str.replace('次观看', '')
-            
-            if '万' in number_str:
-                number = float(number_str.replace('万', ''))
-                return int(number * 10000)
-            
-            return int(number_str.replace(',', ''))
-                
-        except Exception as e:
-            Utils.log(f"转换观看次数时出错: {str(e)}", 'ERROR')
-            return 0
+            Utils.log(f"保存响应JSON时出错: {str(e)}", 'ERROR')

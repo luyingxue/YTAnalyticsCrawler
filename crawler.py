@@ -102,15 +102,14 @@ class YoutubeCrawler:
         """处理单个URL的爬取任务"""
         try:
             target_url = url_data['url']
-            self.log(f"处理URL: {target_url} ({url_data['description']})")
+            self.log(f"处理URL: {target_url} (关键词: {url_data['key_words']})")
             
             # 访问页面
             self.driver.get(target_url)
             time.sleep(3)
             
-            # 处理Shorts按钮
-            if 'youtube.com/hashtag' not in self.driver.current_url:
-                self._click_shorts_button()
+            # 点击Shorts按钮
+            self._click_shorts_button()
             
             # 执行滚动和分析
             self.log("开始执行滚动和分析...")
@@ -142,24 +141,9 @@ class YoutubeCrawler:
         last_height = self.driver.execute_script("return document.documentElement.scrollHeight")
         self.log(f"初始页面高度: {last_height}")
         
-        # 添加一个变量来标记是否是Shorts内容
-        is_shorts_content = False
-        
-        # 获取当前页面URL并判断类型
-        current_url = self.driver.current_url
-        self.log(f"当前页面URL: {current_url}")
-        
         # 定义需要捕获的请求URL模式
-        if 'youtube.com/results' in current_url:
-            target_url = 'www.youtube.com/youtubei/v1/search'
-            self.log("检测到搜索结果页面，将捕获搜索API请求")
-        elif 'youtube.com/hashtag' in current_url:
-            target_url = 'www.youtube.com/youtubei/v1/browse'
-            self.log("检测到话题标签页面，将捕获浏览API请求")
-            is_shorts_content = True
-        else:
-            self.log(f"未识别的页面类型: {current_url}")
-            target_url = 'www.youtube.com/youtubei/v1/search'
+        target_url = 'www.youtube.com/youtubei/v1/search'
+        self.log("检测到搜索结果页面，将捕获搜索API请求")
         
         scroll_count = 0
         no_change_count = 0  # 添加计数器跟踪页面高度未变化的次数
@@ -189,14 +173,12 @@ class YoutubeCrawler:
                                 response_text = Utils.process_response_content(response)
                                 response_json = json.loads(response_text)
                                 
-                                if is_shorts_content:
-                                    Utils.analyze_and_store_shorts_json_response(response_json)
+                                # 处理响应数据
+                                if request_count == 1:
+                                    Utils.analyze_and_store_json_response_first(response_json)
                                 else:
-                                    if request_count == 1:
-                                        Utils.analyze_and_store_json_response_first(response_json)
-                                    else:
-                                        Utils.analyze_and_store_json_response_else(response_json)
-                                        
+                                    Utils.analyze_and_store_json_response_else(response_json)
+                                    
                             except json.JSONDecodeError as e:
                                 self.log(f"JSON解析错误: {str(e)}", 'ERROR')
                             except Exception as e:

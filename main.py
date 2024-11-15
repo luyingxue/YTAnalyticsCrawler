@@ -52,49 +52,49 @@ def main():
     try:
         logger.info("程序启动，按Ctrl+C可以安全退出")
         
-        # 读取配置文件
+        # 读取配置文件和设置进程数
         config = configparser.ConfigParser()
         config.read('config.ini')
-        
-        # 获取配置值
         config_processes = int(config['crawler'].get('num_processes', 1))
-        retry_wait = int(config['crawler'].get('retry_wait', 300))  # 获取重试等待时间
+        retry_wait = int(config['crawler'].get('retry_wait', 300))
         max_processes = cpu_count() - 1
         num_processes = min(config_processes, max_processes)
         
         logger.info(f"配置进程数: {config_processes}, CPU核心数-1: {max_processes}")
         logger.info(f"将使用 {num_processes} 个进程")
         
-        while True:
+        while True:  # 永久循环
             try:
-                # 获取所有活跃的URL
+                # 获取活跃的搜索关键词
                 db = DBManager()
-                urls = []
-                for _ in range(num_processes):
-                    url_data = db.get_active_search_url()
-                    if url_data:
-                        urls.append(url_data)
-                
-                if not urls:
-                    logger.info("没有可用的URL，程序退出")
-                    break
-                
-                # 创建进程池
-                with Pool(processes=len(urls)) as pool:
-                    # 分配任务给工作进程
-                    results = pool.map(crawl_worker, urls)
+                try:
+                    # 一次性获取所有需要的关键词
+                    keywords = db.get_active_keywords(num_processes)
                     
-                    # 检查结果
-                    success = sum(1 for r in results if r)
-                    logger.info(f"本轮处理完成: {success}/{len(urls)} 个URL成功")
+                    if not keywords:
+                        logger.info("所有关键词今天都已经抓取过，等待5分钟后继续...")
+                        time.sleep(300)  # 等待5分钟
+                        continue  # 继续循环
+                    
+                    # 创建进程池
+                    with Pool(processes=len(keywords)) as pool:
+                        # 分配任务给工作进程
+                        results = pool.map(crawl_worker, keywords)
+                        
+                        # 检查结果
+                        success = sum(1 for r in results if r)
+                        logger.info(f"本轮处理完成: {success}/{len(keywords)} 个关键词成功")
+                    
+                finally:
+                    db.disconnect()  # 确保数据库连接被关闭
                 
                 # 等待一段时间再开始下一轮
-                time.sleep(60)  # 可以根据需要调整等待时间
+                time.sleep(60)  # 等待60秒
                 
             except Exception as e:
-                logger.error(f"处理一轮URL时出错: {str(e)}")
+                logger.error(f"处理一轮关键词时出错: {str(e)}")
                 logger.info(f"等待 {retry_wait} 秒后重试...")
-                time.sleep(retry_wait)  # 使用配置的重试等待时间
+                time.sleep(retry_wait)
                 
     except Exception as e:
         logger.error(f"程序执行出错: {str(e)}")

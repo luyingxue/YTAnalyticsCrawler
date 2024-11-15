@@ -232,7 +232,7 @@ class DBManager:
             self.disconnect()
             
     def get_active_search_url(self):
-        """获取一个活跃的索URL"""
+        """获取一个活跃的搜索URL"""
         try:
             self.connect()
             cursor = self.connection.cursor(dictionary=True)
@@ -248,12 +248,12 @@ class DBManager:
             result = cursor.fetchone()
             
             if result['total_count'] > 0 and result['total_count'] == result['today_count']:
-                self.log("所有URL今天都已经抓取过了")
+                self.log("所有关键词今天都已经抓取过了")
                 return None
             
-            # 获取今天未抓取的URL
+            # 获取今天未抓取的关键词
             query = """
-                SELECT id, url, description 
+                SELECT id, key_words
                 FROM search_urls 
                 WHERE is_active = TRUE 
                 AND (DATE(last_crawl_time) != CURRENT_DATE OR last_crawl_time IS NULL)
@@ -264,6 +264,9 @@ class DBManager:
             result = cursor.fetchone()
             
             if result:
+                # 生成URL
+                result['url'] = f"https://www.youtube.com/results?search_query={result['key_words']}"
+                
                 # 更新最后抓取时间
                 update_query = """
                     UPDATE search_urls 
@@ -276,7 +279,7 @@ class DBManager:
             return result
             
         except Error as e:
-            self.log(f"获取搜索URL出错: {str(e)}", 'ERROR')
+            self.log(f"获取搜索关键词出错: {str(e)}", 'ERROR')
             raise
         finally:
             if cursor:
@@ -287,36 +290,31 @@ class DBManager:
         """批量插入视频数据，过滤黑名单频道"""
         if not video_list:
             return (0, 0)
-            
+        
         try:
             self.connect()
             cursor = self.connection.cursor()
             
             self.log(f"开始批量插入 {len(video_list)} 条数据")
             
-            # 修改插入SQL，添加黑名单过滤
+            # 修改INSERT语句，添加canonical_base_url字段
             insert_query = """
                 INSERT INTO videos (
                     video_id, title, view_count, published_date, 
-                    crawl_date, channel_id, channel_name
-                )
-                SELECT t.* FROM (
-                    SELECT %s as video_id, %s as title, %s as view_count,
-                           %s as published_date, %s as crawl_date,
-                           %s as channel_id, %s as channel_name
-                    FROM dual
-                ) t
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM channel_blacklist b 
-                    WHERE b.channel_id = t.channel_id
-                )
+                    crawl_date, channel_id, channel_name, canonical_base_url
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE
                     title = VALUES(title),
                     view_count = VALUES(view_count)
             """
             
+            # 先过滤黑名单
+            blacklist_query = "SELECT channel_id FROM channel_blacklist"
+            cursor.execute(blacklist_query)
+            blacklist = {row[0] for row in cursor.fetchall()}
+            
             inserted = 0
-            skipped = 0
+            updated = 0
             blacklisted = 0
             
             # 分批处理数据
@@ -325,37 +323,53 @@ class DBManager:
                 values = []
                 
                 for video in batch:
-                    data = (
-                        video.get('video_id'),
-                        video.get('title'),
-                        video.get('view_count'),
-                        video.get('published_date'),
-                        video.get('crawl_date'),
-                        video.get('channel_id'),
-                        video.get('channel_name')
-                    )
-                    values.append(data)
+                    # 检查是否在黑名单中
+                    if video.get('channel_id') not in blacklist:
+                        data = (
+                            video.get('video_id'),
+                            video.get('title'),
+                            video.get('view_count'),
+                            video.get('published_date'),
+                            video.get('crawl_date'),
+                            video.get('channel_id'),
+                            video.get('channel_name'),
+                            video.get('canonical_base_url')  # 添加canonical_base_url
+                        )
+                        values.append(data)
+                    else:
+                        blacklisted += 1
                 
-                try:
-                    # 执行批量插入
-                    cursor.executemany(insert_query, values)
-                    
-                    # 统计结果
-                    inserted += cursor.rowcount
-                    skipped += len(values) - cursor.rowcount
-                    
-                    # 提交事务
-                    self.connection.commit()
-                    
-                    self.log(f"批量插入成功: {cursor.rowcount}/{len(values)} 条记录")
-                    
-                except Error as e:
-                    self.log(f"批量插入出错: {str(e)}", 'ERROR')
-                    self.connection.rollback()
-                    continue
-                    
-            self.log(f"批量插入完成: 成功 {inserted} 条，跳过 {skipped} 条")
-            return (inserted, skipped)
+                if values:
+                    try:
+                        # 先检查哪些记录已存在
+                        check_query = """
+                            SELECT video_id, crawl_date FROM videos 
+                            WHERE (video_id, crawl_date) IN ({})
+                        """.format(','.join(['(%s,%s)'] * len(values)))
+                        check_values = [(v[0], v[4]) for v in values]  # video_id和crawl_date
+                        cursor.execute(check_query, [item for pair in check_values for item in pair])
+                        existing = {(row[0], row[1]) for row in cursor.fetchall()}
+                        
+                        # 执行批量插入
+                        cursor.executemany(insert_query, values)
+                        
+                        # 计算实际的插入和更新数
+                        for value in values:
+                            if (value[0], value[4]) in existing:  # 如果记录已存在
+                                updated += 1
+                            else:
+                                inserted += 1
+                                
+                        self.connection.commit()
+                        self.log(f"批量处理成功: 新增 {inserted} 条，更新 {updated} 条")
+                        
+                    except Error as e:
+                        self.log(f"批量插入出错: {str(e)}", 'ERROR')
+                        self.connection.rollback()
+                        continue
+            
+            self.log(f"批量插入完成: 新增 {inserted} 条，更新 {updated} 条，黑名单 {blacklisted} 条")
+            return (inserted, updated)
             
         except Error as e:
             self.log(f"批量插入过程出错: {str(e)}", 'ERROR')
@@ -367,3 +381,62 @@ class DBManager:
             if cursor:
                 cursor.close()
             self.disconnect()
+            
+    def get_active_keywords(self, limit):
+        """
+        一次性获取多个活跃的搜索关键词
+        Args:
+            limit: 需要获取的关键词数量
+        Returns:
+            list: 关键词数据列表
+        """
+        try:
+            self.connect()
+            cursor = self.connection.cursor(dictionary=True)
+            
+            # 检查是否所有关键词都已在今天抓取过
+            check_query = """
+                SELECT COUNT(*) as total_count,
+                       SUM(CASE WHEN DATE(last_crawl_time) = CURRENT_DATE THEN 1 ELSE 0 END) as today_count
+                FROM search_urls
+                WHERE is_active = TRUE
+            """
+            cursor.execute(check_query)
+            result = cursor.fetchone()
+            
+            if result['total_count'] > 0 and result['total_count'] == result['today_count']:
+                self.log("所有关键词今天都已经抓取过了")
+                return []
+            
+            # 获取今天未抓取的关键词
+            query = """
+                SELECT id, key_words
+                FROM search_urls 
+                WHERE is_active = TRUE 
+                AND (DATE(last_crawl_time) != CURRENT_DATE OR last_crawl_time IS NULL)
+                ORDER BY COALESCE(last_crawl_time, '1970-01-01') ASC
+                LIMIT %s
+            """
+            cursor.execute(query, (limit,))
+            results = cursor.fetchall()
+            
+            if results:
+                # 更新最后抓取时间
+                ids = [r['id'] for r in results]
+                update_query = """
+                    UPDATE search_urls 
+                    SET last_crawl_time = NOW() 
+                    WHERE id IN ({})
+                """.format(','.join(['%s'] * len(ids)))
+                cursor.execute(update_query, ids)
+                self.connection.commit()
+                
+                # 为每个结果生成URL
+                for result in results:
+                    result['url'] = f"https://www.youtube.com/results?search_query={result['key_words']}"
+            
+            return results
+            
+        except Error as e:
+            self.log(f"获取搜索关键词出错: {str(e)}", 'ERROR')
+            raise

@@ -232,7 +232,7 @@ class DBManager:
             self.disconnect()
             
     def get_active_search_url(self):
-        """获取一个活跃的搜索URL"""
+        """获一个活跃的搜索URL"""
         try:
             self.connect()
             cursor = self.connection.cursor(dictionary=True)
@@ -297,79 +297,89 @@ class DBManager:
             
             self.log(f"开始批量插入 {len(video_list)} 条数据")
             
-            # 修改INSERT语句，添加canonical_base_url字段
-            insert_query = """
-                INSERT INTO videos (
-                    video_id, title, view_count, published_date, 
-                    crawl_date, channel_id, channel_name, canonical_base_url
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE
-                    title = VALUES(title),
-                    view_count = VALUES(view_count)
-            """
-            
             # 先过滤黑名单
             blacklist_query = "SELECT channel_id FROM channel_blacklist"
             cursor.execute(blacklist_query)
             blacklist = {row[0] for row in cursor.fetchall()}
             
-            inserted = 0
-            updated = 0
+            # 检查已存在的记录
+            check_values = []
+            for video in video_list:
+                check_values.extend([
+                    video.get('video_id'),
+                    video.get('crawl_date')
+                ])
+                
+            placeholders = ', '.join(['(%s, %s)'] * len(video_list))
+            check_query = f"""
+                SELECT video_id, crawl_date 
+                FROM videos 
+                WHERE (video_id, crawl_date) IN ({placeholders})
+            """
+            
+            cursor.execute(check_query, check_values)
+            existing = {(row[0], str(row[1])) for row in cursor.fetchall()}  # 转换为字符串比较
+            
+            # 分类数据
+            new_records = []
+            update_records = []
             blacklisted = 0
             
-            # 分批处理数据
-            for i in range(0, len(video_list), batch_size):
-                batch = video_list[i:i + batch_size]
-                values = []
-                
-                for video in batch:
-                    # 检查是否在黑名单中
-                    if video.get('channel_id') not in blacklist:
-                        data = (
-                            video.get('video_id'),
-                            video.get('title'),
-                            video.get('view_count'),
-                            video.get('published_date'),
-                            video.get('crawl_date'),
-                            video.get('channel_id'),
-                            video.get('channel_name'),
-                            video.get('canonical_base_url')  # 添加canonical_base_url
-                        )
-                        values.append(data)
+            for video in video_list:
+                if video.get('channel_id') not in blacklist:
+                    key = (video.get('video_id'), video.get('crawl_date'))
+                    data = (
+                        video.get('video_id'),
+                        video.get('title'),
+                        video.get('view_count'),
+                        video.get('published_date'),
+                        video.get('crawl_date'),
+                        video.get('channel_id'),
+                        video.get('channel_name'),
+                        video.get('canonical_base_url')
+                    )
+                    
+                    if key in existing:
+                        update_records.append(data)
+                        self.log(f"更新记录: {key}")
                     else:
-                        blacklisted += 1
-                
-                if values:
-                    try:
-                        # 先检查哪些记录已存在
-                        check_query = """
-                            SELECT video_id, crawl_date FROM videos 
-                            WHERE (video_id, crawl_date) IN ({})
-                        """.format(','.join(['(%s,%s)'] * len(values)))
-                        check_values = [(v[0], v[4]) for v in values]  # video_id和crawl_date
-                        cursor.execute(check_query, [item for pair in check_values for item in pair])
-                        existing = {(row[0], row[1]) for row in cursor.fetchall()}
-                        
-                        # 执行批量插入
-                        cursor.executemany(insert_query, values)
-                        
-                        # 计算实际的插入和更新数
-                        for value in values:
-                            if (value[0], value[4]) in existing:  # 如果记录已存在
-                                updated += 1
-                            else:
-                                inserted += 1
-                                
-                        self.connection.commit()
-                        self.log(f"批量处理成功: 新增 {inserted} 条，更新 {updated} 条")
-                        
-                    except Error as e:
-                        self.log(f"批量插入出错: {str(e)}", 'ERROR')
-                        self.connection.rollback()
-                        continue
+                        new_records.append(data)
+                        self.log(f"新增记录: {key}")
+                else:
+                    blacklisted += 1
+                    self.log(f"黑名单记录: {video.get('channel_id')}")
             
-            self.log(f"批量插入完成: 新增 {inserted} 条，更新 {updated} 条，黑名单 {blacklisted} 条")
-            return (inserted, updated)
+            new_count = 0
+            update_count = 0
+            
+            if new_records or update_records:
+                insert_query = """
+                    INSERT INTO videos (
+                        video_id, title, view_count, published_date, 
+                        crawl_date, channel_id, channel_name, canonical_base_url
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE
+                        title = VALUES(title),
+                        view_count = VALUES(view_count),
+                        channel_name = VALUES(channel_name),
+                        canonical_base_url = VALUES(canonical_base_url)
+                """
+                
+                # 分别处理新增和更新
+                if new_records:
+                    cursor.executemany(insert_query, new_records)
+                    new_count = len(new_records)
+                    self.log(f"新增记录数: {new_count}")
+                    
+                if update_records:
+                    cursor.executemany(insert_query, update_records)
+                    update_count = len(update_records)
+                    self.log(f"更新记录数: {update_count}")
+                    
+                self.connection.commit()
+                
+            self.log(f"批量处理完成: 新增 {new_count} 条，更新 {update_count} 条，黑名单 {blacklisted} 条")
+            return (new_count, update_count)
             
         except Error as e:
             self.log(f"批量插入过程出错: {str(e)}", 'ERROR')

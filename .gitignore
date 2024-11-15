@@ -69,3 +69,7 @@ response_json_*.json
 
 # 忽略YouTube视频数据CSV文件
 youtube_videos.csv
+
+# 已删除的旧文件
+YT_Proxy_Analytics.py
+browser_worker.py

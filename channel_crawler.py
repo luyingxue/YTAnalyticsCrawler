@@ -127,6 +127,19 @@ class ChannelCrawler:
                     self.driver.get(url)
                     time.sleep(random.uniform(5, 10))
                     
+                    # 获取页面上的channel_name
+                    page_channel_name = None
+                    try:
+                        channel_name_xpath = "/html/body/ytd-app/div[1]/ytd-page-manager/ytd-browse/div[3]/ytd-tabbed-page-header/tp-yt-app-header-layout/div/tp-yt-app-header/div[2]/div/div[2]/yt-page-header-renderer/yt-page-header-view-model/div/div[1]/div/yt-dynamic-text-view-model/h1/span"
+                        channel_name_element = WebDriverWait(self.driver, 10).until(
+                            EC.presence_of_element_located((By.XPATH, channel_name_xpath))
+                        )
+                        page_channel_name = channel_name_element.text
+                        self.log(f"从页面获取到channel_name: {page_channel_name}")
+                    except Exception as e:
+                        self.log(f"获取页面channel_name失败: {str(e)}")
+                        page_channel_name = None
+                    
                     # 点击"显示更多"区域
                     try:
                         # 定义可能的XPATH列表
@@ -223,7 +236,7 @@ class ChannelCrawler:
                         self.log("成功获取API响应")
                         
                         # 解析频道信息
-                        channel_info = Utils.analyze_channel_json_response(api_response)
+                        channel_info = Utils.analyze_channel_json_response(response_json, page_channel_name)
                         if channel_info:
                             self.log("成功解析频道信息")
                             return channel_info

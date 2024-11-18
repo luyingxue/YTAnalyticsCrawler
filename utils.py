@@ -237,7 +237,7 @@ class Utils:
             Utils.log(f"保存响应JSON时出错: {str(e)}", 'ERROR')
     
     @staticmethod
-    def analyze_channel_json_response(json_data):
+    def analyze_channel_json_response(json_data, page_channel_name=None):
         """分析频道JSON响应数据"""
         try:
             # 获取about信息
@@ -283,6 +283,10 @@ class Utils:
             if not channel_name:
                 channel_name = about_renderer.get('title', {}).get('simpleText', '') or \
                              about_renderer.get('title', '')
+            
+            # 使用页面获取的channel_name，如果没有则使用原有逻辑
+            if page_channel_name != None:
+                channel_name = page_channel_name
             channel_data['channel_name'] = channel_name
             Utils.log(f"提取到channel_name: {channel_name}")
             

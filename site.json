@@ -1,0 +1,943 @@
+{
+    "responseContext": {
+        "serviceTrackingParams": [
+            {
+                "service": "GFEEDBACK",
+                "params": [
+                    {
+                        "key": "route",
+                        "value": "channel.featured"
+                    },
+                    {
+                        "key": "is_owner",
+                        "value": "false"
+                    },
+                    {
+                        "key": "is_alc_surface",
+                        "value": "false"
+                    },
+                    {
+                        "key": "browse_id",
+                        "value": "UCEwG3ksd6rKYdMblqH76Iow"
+                    },
+                    {
+                        "key": "browse_id_prefix",
+                        "value": ""
+                    },
+                    {
+                        "key": "logged_in",
+                        "value": "1"
+                    },
+                    {
+                        "key": "e",
+                        "value": "9453586,9453587,23804281,23986026,24004644,24077241,24166867,24181174,24186125,24241378,24425063,24428953,24439361,24453989,24495712,24499533,24542367,24548629,24566687,24699899,39325798,39325818,39325854,39326587,39326596,39326613,39326617,39326986,39327052,39327102,39327297,39327326,39327561,39327568,39327594,39327598,39327635,39327662,39327671,39327743,39327837,39327846,39327852,39327894,39327964,51009781,51010235,51017346,51020570,51020846,51025415,51030101,51037344,51037351,51050361,51052299,51053689,51057848,51057851,51063643,51064835,51072748,51091058,51095478,51098299,51105630,51111738,51115184,51117319,51119594,51124104,51125020,51129210,51141472,51144926,51145218,51151423,51152050,51153492,51157411,51157841,51158514,51160545,51165467,51169118,51176511,51178310,51178337,51178344,51178357,51178982,51182850,51183910,51184990,51194136,51204329,51207300,51213773,51217504,51221152,51222382,51222973,51227037,51227410,51227778,51228350,51230241,51230478,51231814,51236019,51237842,51239093,51241028,51241212,51242448,51243940,51248255,51248734,51251836,51255676,51255680,51255743,51256084,51257946,51258066,51259133,51260454,51263449,51265343,51265364,51265375,51266454,51272458,51273608,51274583,51275785,51276557,51276565,51281227,51282077,51282082,51282792,51283950,51285052,51285419,51285717,51287196,51287500,51289483,51289926,51289935,51289938,51289954,51289967,51289974,51294322,51295578,51296439,51298019,51298020,51299154,51299627,51299710,51299724,51299981,51300003,51300014,51300176,51300241,51300699,51302492,51302680,51303667,51303669,51303789,51304155,51304662,51305523,51305839,51306259,51306417,51307502,51308045,51308060,51309314,51310323,51310742,51311025,51311034,51311505,51311989,51312144,51312688,51313109,51313149,51313765,51313767,51314158,51314685,51314690,51314705,51314712,51314723,51315041,51315912,51315921,51315928,51315933,51315938,51315947,51315952,51315963,51315972,51315979,51316846,51317749,51317942,51318835,51318838,51318845,51326208,51326641,51326932,51327146,51327169,51327184,51327613,51327636,51328144,51328946,51329146,51330194,51331483,51331500,51331516,51331535,51331538,51331545,51331556,51331563,51332859,51332896,51333541,51333879,51334984,51335364,51335392,51335594,51335646,51336632,51337186,51337349,51337456,51337850,51338524,51339127,51339163,51339747,51340611,51341226,51341793,51342093,51342856,51343110,51343243,51343368,51343687,51344573,51345125,51345228,51346803,51346808,51346823,51346844,51346853,51346874,51346883,51346896,51347483,51347747,51348312,51348341,51348386,51348672,51348754,51349429"
+                    }
+                ]
+            },
+            {
+                "service": "GOOGLE_HELP",
+                "params": [
+                    {
+                        "key": "browse_id",
+                        "value": "UCEwG3ksd6rKYdMblqH76Iow"
+                    },
+                    {
+                        "key": "browse_id_prefix",
+                        "value": ""
+                    }
+                ]
+            },
+            {
+                "service": "CSI",
+                "params": [
+                    {
+                        "key": "c",
+                        "value": "WEB"
+                    },
+                    {
+                        "key": "cver",
+                        "value": "2.20241113.07.00"
+                    },
+                    {
+                        "key": "yt_li",
+                        "value": "1"
+                    },
+                    {
+                        "key": "GetChannelPage_rid",
+                        "value": "0xbbd828cee76fa86a"
+                    }
+                ]
+            },
+            {
+                "service": "GUIDED_HELP",
+                "params": [
+                    {
+                        "key": "logged_in",
+                        "value": "1"
+                    }
+                ]
+            },
+            {
+                "service": "ECATCHER",
+                "params": [
+                    {
+                        "key": "client.version",
+                        "value": "2.20241113"
+                    },
+                    {
+                        "key": "client.name",
+                        "value": "WEB"
+                    }
+                ]
+            }
+        ],
+        "maxAgeSeconds": 300,
+        "mainAppWebResponseContext": {
+            "datasyncId": "111410935908736599013||",
+            "loggedOut": false,
+            "trackingParam": "kx_fmPxhoPZRvfGX8tC7UvTHARowEZtDQGsOgekSIBCuUBwRgkuswmIBwOcCE59TDtslLKPQ-SS"
+        },
+        "webResponseContextExtensionData": {
+            "hasDecorated": true
+        }
+    },
+    "trackingParams": "CAAQhGciEwipgK6yquKJAxW1a0wIHWIfLB-CARwIHRC7LxgAIhMI0cKmrqriiQMVeUtMCB3q_gn1",
+    "onResponseReceivedEndpoints": [
+        {
+            "clickTrackingParams": "CAAQhGciEwipgK6yquKJAxW1a0wIHWIfLB8=",
+            "appendContinuationItemsAction": {
+                "continuationItems": [
+                    {
+                        "aboutChannelRenderer": {
+                            "metadata": {
+                                "aboutChannelViewModel": {
+                                    "description": "New video every day. 🎥\nSubscribe for More! ❤️\n",
+                                    "descriptionLabel": {
+                                        "content": "说明",
+                                        "styleRuns": [
+                                            {
+                                                "startIndex": 0,
+                                                "length": 2
+                                            }
+                                        ]
+                                    },
+                                    "country": "越南",
+                                    "customLinksLabel": {
+                                        "content": "链接",
+                                        "styleRuns": [
+                                            {
+                                                "startIndex": 0,
+                                                "length": 2
+                                            }
+                                        ]
+                                    },
+                                    "subscriberCountText": "146万位订阅者",
+                                    "viewCountText": "188,261,485次观看",
+                                    "joinedDateText": {
+                                        "content": "2024年1月15日注册",
+                                        "styleRuns": [
+                                            {
+                                                "startIndex": 0,
+                                                "length": 12
+                                            }
+                                        ]
+                                    },
+                                    "canonicalChannelUrl": "http://www.youtube.com/@CatRealmAI",
+                                    "channelId": "UCEwG3ksd6rKYdMblqH76Iow",
+                                    "additionalInfoLabel": {
+                                        "content": "频道详情",
+                                        "styleRuns": [
+                                            {
+                                                "startIndex": 0,
+                                                "length": 4
+                                            }
+                                        ]
+                                    },
+                                    "customUrlOnTap": {
+                                        "innertubeCommand": {
+                                            "clickTrackingParams": "CAAQhGciEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                            "commandMetadata": {
+                                                "webCommandMetadata": {
+                                                    "ignoreNavigation": true
+                                                }
+                                            },
+                                            "shareEntityEndpoint": {
+                                                "serializedShareEntity": "GhhVQ0V3RzNrc2Q2cktZZE1ibHFINzZJb3c%3D",
+                                                "sharePanelType": "SHARE_PANEL_TYPE_UNIFIED_SHARE_PANEL"
+                                            }
+                                        }
+                                    },
+                                    "videoCountText": "36 个视频",
+                                    "links": [
+                                        {
+                                            "channelExternalLinkViewModel": {
+                                                "title": {
+                                                    "content": "Tiktok"
+                                                },
+                                                "link": {
+                                                    "content": "tiktok.com/@catrealmai",
+                                                    "commandRuns": [
+                                                        {
+                                                            "startIndex": 0,
+                                                            "length": 22,
+                                                            "onTap": {
+                                                                "innertubeCommand": {
+                                                                    "clickTrackingParams": "CBUQobIHGAIiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                    "commandMetadata": {
+                                                                        "webCommandMetadata": {
+                                                                            "url": "https://www.youtube.com/redirect?event=channel_description&redir_token=QUFFLUhqbEswYjMtSFFIODFSQ3l1akVLTDVUQzNBU2RnZ3xBQ3Jtc0trMVhwLWxKQzQxNGpOQ0ZOck9YTmtOa3Z2c3hrckVKOGNZQTU3YnBheE4wazg4WHVQdXpEZk1jb0R1aFhZRVNmWmxQM3h5b0dpaEdTTFNjaUtMUUpNelpERXlNU2pIdVJSTFBweGItaXloQ0drZTNrOA&q=https%3A%2F%2Fwww.tiktok.com%2F%40catrealmai",
+                                                                            "webPageType": "WEB_PAGE_TYPE_UNKNOWN",
+                                                                            "rootVe": 83769
+                                                                        }
+                                                                    },
+                                                                    "urlEndpoint": {
+                                                                        "url": "https://www.youtube.com/redirect?event=channel_description&redir_token=QUFFLUhqbEswYjMtSFFIODFSQ3l1akVLTDVUQzNBU2RnZ3xBQ3Jtc0trMVhwLWxKQzQxNGpOQ0ZOck9YTmtOa3Z2c3hrckVKOGNZQTU3YnBheE4wazg4WHVQdXpEZk1jb0R1aFhZRVNmWmxQM3h5b0dpaEdTTFNjaUtMUUpNelpERXlNU2pIdVJSTFBweGItaXloQ0drZTNrOA&q=https%3A%2F%2Fwww.tiktok.com%2F%40catrealmai",
+                                                                        "target": "TARGET_NEW_WINDOW",
+                                                                        "nofollow": true
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                "favicon": {
+                                                    "sources": [
+                                                        {
+                                                            "url": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcTil9qRPKod7VzAZX5hcljGOgNm_7OH9ctUPIWDk6tsvCGucVCNpU42I4k2ABNB9C3Dcv2DTXTaPLHtE7s4M5O0dzX4RrA-amgItDD5R5YT_fInOg",
+                                                            "width": 16,
+                                                            "height": 16
+                                                        },
+                                                        {
+                                                            "url": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcTQNWsQwtp_kYkNwgZnqc6n3XkmETbBWnjEs5aqLKdxeX3Wzcm-Wx5HgUOr428dO1AiXFFOmntTerjwyz490qT8gCGo1vfOjv6f-7fMX15zaDKa6w",
+                                                            "width": 24,
+                                                            "height": 24
+                                                        },
+                                                        {
+                                                            "url": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcQygKR9Wk54Cc_JsO1lyQb_1WH1e7-2vnoNPKwyIfUp5ytWAZgsPmk0id-xzupFpGlSOE8B0Cq9W6o0kP8adjPc1IHTMJDkjQRDyTUOL6wXevQhZw",
+                                                            "width": 32,
+                                                            "height": 32
+                                                        },
+                                                        {
+                                                            "url": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcTcBLjXcdPdrvf7vm3krYSrE5nTsulUW2d7SiAXUyOmJ3k7LmJ3ismlN7eU4GinNoUQc6_0xtDkc8rWHFdDmQzlI6UOKmQQscwltJ46aBUE8zThNA",
+                                                            "width": 48,
+                                                            "height": 48
+                                                        },
+                                                        {
+                                                            "url": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcQ7IkkbqNzuB9NlTdwO-p-79wzObhQSbTuUEeJRXQdmtLBMvVSSGm7J8LkWM-o4Lc2KZQkSdLGYh2ph6dt4moIfG1JHagaf9zC6cnYNfWNjwYlA9Q",
+                                                            "width": 50,
+                                                            "height": 50
+                                                        },
+                                                        {
+                                                            "url": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcT5aYj7VdDmDIFMFxhRzxy_S7SguI8_rqskdTqoNV4aJs32DCET_r4aHvy8xn0jDKDWoalwDy-_1-4EIKlF2QdvYqWyDfNTfC0nyF02ZhLIVM1vVQ",
+                                                            "width": 64,
+                                                            "height": 64
+                                                        },
+                                                        {
+                                                            "url": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcRNkuFU4yCOx1Zaar69IdZTstTaCnjOdU-6ozZbE4f2KXhUHw_2Da3pYL-AjA-LQFc2YySy9JRsaNX4zRrdokB5PCjGP8gN2UZ7fvXKJ5lftAk4_Q",
+                                                            "width": 96,
+                                                            "height": 96
+                                                        },
+                                                        {
+                                                            "url": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcTt71izcVOsKD84C9xklBGMvmECZg2l8-w5IrCaEhDsh3Gr6FkoIZ9BSrQytiBSp2AkG6o3g1SwbvJTm6yS-kYIe0Xzq46A9GwEtxzQGuSoroWP1Ww",
+                                                            "width": 128,
+                                                            "height": 128
+                                                        },
+                                                        {
+                                                            "url": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcSaokoUIYqEIfVkup_xoaUivZBehTWcxZmSu4NTnDcAKMtJon8NwCrfWn54BQ9wINCfq8y4mXG0irVCgaReSsiYhjssAop7IZVUetWi4ZzFfQN5yko",
+                                                            "width": 180,
+                                                            "height": 180
+                                                        },
+                                                        {
+                                                            "url": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcQKztzAFLM-Ht00NtZR3C_LPpwiMBXyfSbY3CevC9KOxibegrIjaqfvZtuasvcIjnxH9SHSWIC-D-hYkAagy33P_6rpJFiNR2iYp0UR5p99Y-NJcJ4",
+                                                            "width": 256,
+                                                            "height": 256
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "displayCanonicalChannelUrl": "www.youtube.com/@CatRealmAI"
+                                }
+                            },
+                            "flaggingButton": {
+                                "buttonRenderer": {
+                                    "style": "STYLE_DEFAULT",
+                                    "size": "SIZE_DEFAULT",
+                                    "text": {
+                                        "runs": [
+                                            {
+                                                "text": "举报用户"
+                                            }
+                                        ]
+                                    },
+                                    "serviceEndpoint": {
+                                        "clickTrackingParams": "CAYQ1LYLIhMIqYCusqriiQMVtWtMCB1iHywf",
+                                        "commandMetadata": {
+                                            "webCommandMetadata": {
+                                                "sendPost": true
+                                            }
+                                        },
+                                        "signalServiceEndpoint": {
+                                            "signal": "CLIENT_SIGNAL",
+                                            "actions": [
+                                                {
+                                                    "clickTrackingParams": "CAYQ1LYLIhMIqYCusqriiQMVtWtMCB1iHywf",
+                                                    "openPopupAction": {
+                                                        "popup": {
+                                                            "menuPopupRenderer": {
+                                                                "items": [
+                                                                    {
+                                                                        "toggleMenuServiceItemRenderer": {
+                                                                            "defaultText": {
+                                                                                "runs": [
+                                                                                    {
+                                                                                        "text": "在我的频道中隐藏此用户"
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            "defaultServiceEndpoint": {
+                                                                                "clickTrackingParams": "CA4Q-0sYASITCKmArrKq4okDFbVrTAgdYh8sHw==",
+                                                                                "commandMetadata": {
+                                                                                    "webCommandMetadata": {
+                                                                                        "sendPost": true
+                                                                                    }
+                                                                                },
+                                                                                "signalServiceEndpoint": {
+                                                                                    "signal": "CLIENT_SIGNAL",
+                                                                                    "actions": [
+                                                                                        {
+                                                                                            "clickTrackingParams": "CA4Q-0sYASITCKmArrKq4okDFbVrTAgdYh8sHw==",
+                                                                                            "openPopupAction": {
+                                                                                                "popup": {
+                                                                                                    "confirmDialogRenderer": {
+                                                                                                        "title": {
+                                                                                                            "runs": [
+                                                                                                                {
+                                                                                                                    "text": "隐藏用户"
+                                                                                                                }
+                                                                                                            ]
+                                                                                                        },
+                                                                                                        "trackingParams": "CBIQxjgiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                        "dialogMessages": [
+                                                                                                            {
+                                                                                                                "runs": [
+                                                                                                                    {
+                                                                                                                        "text": "在我的频道上隐藏此用户发表过的评论以及未来发表的评论。"
+                                                                                                                    }
+                                                                                                                ]
+                                                                                                            }
+                                                                                                        ],
+                                                                                                        "confirmButton": {
+                                                                                                            "buttonRenderer": {
+                                                                                                                "style": "STYLE_BLUE_TEXT",
+                                                                                                                "size": "SIZE_DEFAULT",
+                                                                                                                "text": {
+                                                                                                                    "runs": [
+                                                                                                                        {
+                                                                                                                            "text": "提交"
+                                                                                                                        }
+                                                                                                                    ]
+                                                                                                                },
+                                                                                                                "serviceEndpoint": {
+                                                                                                                    "clickTrackingParams": "CBQQ8FsiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                                    "commandMetadata": {
+                                                                                                                        "webCommandMetadata": {
+                                                                                                                            "sendPost": true,
+                                                                                                                            "apiUrl": "/youtubei/v1/flag/flag"
+                                                                                                                        }
+                                                                                                                    },
+                                                                                                                    "flagEndpoint": {
+                                                                                                                        "flagAction": "ChZFd0cza3NkNnJLWWRNYmxxSDc2SW93EAE%3D"
+                                                                                                                    }
+                                                                                                                },
+                                                                                                                "accessibility": {
+                                                                                                                    "label": "提交"
+                                                                                                                },
+                                                                                                                "trackingParams": "CBQQ8FsiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                                "accessibilityData": {
+                                                                                                                    "accessibilityData": {
+                                                                                                                        "label": "提交"
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        },
+                                                                                                        "cancelButton": {
+                                                                                                            "buttonRenderer": {
+                                                                                                                "style": "STYLE_TEXT",
+                                                                                                                "size": "SIZE_DEFAULT",
+                                                                                                                "text": {
+                                                                                                                    "runs": [
+                                                                                                                        {
+                                                                                                                            "text": "取消"
+                                                                                                                        }
+                                                                                                                    ]
+                                                                                                                },
+                                                                                                                "accessibility": {
+                                                                                                                    "label": "取消"
+                                                                                                                },
+                                                                                                                "trackingParams": "CBMQ8FsiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                                "accessibilityData": {
+                                                                                                                    "accessibilityData": {
+                                                                                                                        "label": "取消"
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        },
+                                                                                                        "primaryIsCancel": false
+                                                                                                    }
+                                                                                                },
+                                                                                                "popupType": "DIALOG"
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            },
+                                                                            "toggledText": {
+                                                                                "runs": [
+                                                                                    {
+                                                                                        "text": "从我的频道取消隐藏此用户发表的评论"
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            "toggledServiceEndpoint": {
+                                                                                "clickTrackingParams": "CA4Q-0sYASITCKmArrKq4okDFbVrTAgdYh8sHw==",
+                                                                                "commandMetadata": {
+                                                                                    "webCommandMetadata": {
+                                                                                        "sendPost": true
+                                                                                    }
+                                                                                },
+                                                                                "signalServiceEndpoint": {
+                                                                                    "signal": "CLIENT_SIGNAL",
+                                                                                    "actions": [
+                                                                                        {
+                                                                                            "clickTrackingParams": "CA4Q-0sYASITCKmArrKq4okDFbVrTAgdYh8sHw==",
+                                                                                            "openPopupAction": {
+                                                                                                "popup": {
+                                                                                                    "confirmDialogRenderer": {
+                                                                                                        "title": {
+                                                                                                            "runs": [
+                                                                                                                {
+                                                                                                                    "text": "取消隐藏用户"
+                                                                                                                }
+                                                                                                            ]
+                                                                                                        },
+                                                                                                        "trackingParams": "CA8QxjgiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                        "dialogMessages": [
+                                                                                                            {
+                                                                                                                "runs": [
+                                                                                                                    {
+                                                                                                                        "text": "在我的频道上不再隐藏此用户发表的评论。"
+                                                                                                                    }
+                                                                                                                ]
+                                                                                                            }
+                                                                                                        ],
+                                                                                                        "confirmButton": {
+                                                                                                            "buttonRenderer": {
+                                                                                                                "style": "STYLE_BLUE_TEXT",
+                                                                                                                "size": "SIZE_DEFAULT",
+                                                                                                                "text": {
+                                                                                                                    "runs": [
+                                                                                                                        {
+                                                                                                                            "text": "提交"
+                                                                                                                        }
+                                                                                                                    ]
+                                                                                                                },
+                                                                                                                "serviceEndpoint": {
+                                                                                                                    "clickTrackingParams": "CBEQ8FsiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                                    "commandMetadata": {
+                                                                                                                        "webCommandMetadata": {
+                                                                                                                            "sendPost": true,
+                                                                                                                            "apiUrl": "/youtubei/v1/flag/flag"
+                                                                                                                        }
+                                                                                                                    },
+                                                                                                                    "flagEndpoint": {
+                                                                                                                        "flagAction": "ChZFd0cza3NkNnJLWWRNYmxxSDc2SW93EAI%3D"
+                                                                                                                    }
+                                                                                                                },
+                                                                                                                "accessibility": {
+                                                                                                                    "label": "提交"
+                                                                                                                },
+                                                                                                                "trackingParams": "CBEQ8FsiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                                "accessibilityData": {
+                                                                                                                    "accessibilityData": {
+                                                                                                                        "label": "提交"
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        },
+                                                                                                        "cancelButton": {
+                                                                                                            "buttonRenderer": {
+                                                                                                                "style": "STYLE_TEXT",
+                                                                                                                "size": "SIZE_DEFAULT",
+                                                                                                                "text": {
+                                                                                                                    "runs": [
+                                                                                                                        {
+                                                                                                                            "text": "取消"
+                                                                                                                        }
+                                                                                                                    ]
+                                                                                                                },
+                                                                                                                "accessibility": {
+                                                                                                                    "label": "取消"
+                                                                                                                },
+                                                                                                                "trackingParams": "CBAQ8FsiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                                "accessibilityData": {
+                                                                                                                    "accessibilityData": {
+                                                                                                                        "label": "取消"
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        },
+                                                                                                        "primaryIsCancel": false
+                                                                                                    }
+                                                                                                },
+                                                                                                "popupType": "DIALOG"
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            },
+                                                                            "trackingParams": "CA4Q-0sYASITCKmArrKq4okDFbVrTAgdYh8sHw==",
+                                                                            "isToggled": false,
+                                                                            "toggleMenuServiceItemEntityKey": "EhZFd0cza3NkNnJLWWRNYmxxSDc2SW93IOkCKAE%3D"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "menuServiceItemRenderer": {
+                                                                            "text": {
+                                                                                "runs": [
+                                                                                    {
+                                                                                        "text": "举报频道图片"
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            "serviceEndpoint": {
+                                                                                "clickTrackingParams": "CAYQ1LYLIhMIqYCusqriiQMVtWtMCB1iHywf",
+                                                                                "commandMetadata": {
+                                                                                    "webCommandMetadata": {
+                                                                                        "sendPost": true
+                                                                                    }
+                                                                                },
+                                                                                "signalServiceEndpoint": {
+                                                                                    "signal": "CLIENT_SIGNAL",
+                                                                                    "actions": [
+                                                                                        {
+                                                                                            "clickTrackingParams": "CAYQ1LYLIhMIqYCusqriiQMVtWtMCB1iHywf",
+                                                                                            "openPopupAction": {
+                                                                                                "popup": {
+                                                                                                    "confirmDialogRenderer": {
+                                                                                                        "title": {
+                                                                                                            "runs": [
+                                                                                                                {
+                                                                                                                    "text": "举报频道图片"
+                                                                                                                }
+                                                                                                            ]
+                                                                                                        },
+                                                                                                        "trackingParams": "CAsQxjgiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                        "dialogMessages": [
+                                                                                                            {
+                                                                                                                "runs": [
+                                                                                                                    {
+                                                                                                                        "text": "滥用举报系统可能会导致你的 YouTube 账号被终止。"
+                                                                                                                    }
+                                                                                                                ]
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "runs": [
+                                                                                                                    {
+                                                                                                                        "text": "你确定要举报吗？"
+                                                                                                                    }
+                                                                                                                ]
+                                                                                                            }
+                                                                                                        ],
+                                                                                                        "confirmButton": {
+                                                                                                            "buttonRenderer": {
+                                                                                                                "style": "STYLE_BLUE_TEXT",
+                                                                                                                "size": "SIZE_DEFAULT",
+                                                                                                                "text": {
+                                                                                                                    "runs": [
+                                                                                                                        {
+                                                                                                                            "text": "提交"
+                                                                                                                        }
+                                                                                                                    ]
+                                                                                                                },
+                                                                                                                "serviceEndpoint": {
+                                                                                                                    "clickTrackingParams": "CA0Q8FsiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                                    "commandMetadata": {
+                                                                                                                        "webCommandMetadata": {
+                                                                                                                            "sendPost": true,
+                                                                                                                            "apiUrl": "/youtubei/v1/flag/flag"
+                                                                                                                        }
+                                                                                                                    },
+                                                                                                                    "flagEndpoint": {
+                                                                                                                        "flagAction": "ChZFd0cza3NkNnJLWWRNYmxxSDc2SW93EA5yAggB"
+                                                                                                                    }
+                                                                                                                },
+                                                                                                                "accessibility": {
+                                                                                                                    "label": "提交"
+                                                                                                                },
+                                                                                                                "trackingParams": "CA0Q8FsiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                                "accessibilityData": {
+                                                                                                                    "accessibilityData": {
+                                                                                                                        "label": "提交"
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        },
+                                                                                                        "cancelButton": {
+                                                                                                            "buttonRenderer": {
+                                                                                                                "style": "STYLE_TEXT",
+                                                                                                                "size": "SIZE_DEFAULT",
+                                                                                                                "text": {
+                                                                                                                    "runs": [
+                                                                                                                        {
+                                                                                                                            "text": "取消"
+                                                                                                                        }
+                                                                                                                    ]
+                                                                                                                },
+                                                                                                                "accessibility": {
+                                                                                                                    "label": "取消"
+                                                                                                                },
+                                                                                                                "trackingParams": "CAwQ8FsiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                                "accessibilityData": {
+                                                                                                                    "accessibilityData": {
+                                                                                                                        "label": "取消"
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        },
+                                                                                                        "primaryIsCancel": false
+                                                                                                    }
+                                                                                                },
+                                                                                                "popupType": "DIALOG"
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            },
+                                                                            "trackingParams": "CAYQ1LYLIhMIqYCusqriiQMVtWtMCB1iHywf"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "menuServiceItemRenderer": {
+                                                                            "text": {
+                                                                                "runs": [
+                                                                                    {
+                                                                                        "text": "举报个人资料照片"
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            "serviceEndpoint": {
+                                                                                "clickTrackingParams": "CAYQ1LYLIhMIqYCusqriiQMVtWtMCB1iHywf",
+                                                                                "commandMetadata": {
+                                                                                    "webCommandMetadata": {
+                                                                                        "sendPost": true
+                                                                                    }
+                                                                                },
+                                                                                "signalServiceEndpoint": {
+                                                                                    "signal": "CLIENT_SIGNAL",
+                                                                                    "actions": [
+                                                                                        {
+                                                                                            "clickTrackingParams": "CAYQ1LYLIhMIqYCusqriiQMVtWtMCB1iHywf",
+                                                                                            "openPopupAction": {
+                                                                                                "popup": {
+                                                                                                    "confirmDialogRenderer": {
+                                                                                                        "title": {
+                                                                                                            "runs": [
+                                                                                                                {
+                                                                                                                    "text": "举报个人资料照片"
+                                                                                                                }
+                                                                                                            ]
+                                                                                                        },
+                                                                                                        "trackingParams": "CAgQxjgiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                        "dialogMessages": [
+                                                                                                            {
+                                                                                                                "runs": [
+                                                                                                                    {
+                                                                                                                        "text": "滥用举报系统可能会导致你的 YouTube 账号被终止。"
+                                                                                                                    }
+                                                                                                                ]
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "runs": [
+                                                                                                                    {
+                                                                                                                        "text": "你确定要举报吗？"
+                                                                                                                    }
+                                                                                                                ]
+                                                                                                            }
+                                                                                                        ],
+                                                                                                        "confirmButton": {
+                                                                                                            "buttonRenderer": {
+                                                                                                                "style": "STYLE_BLUE_TEXT",
+                                                                                                                "size": "SIZE_DEFAULT",
+                                                                                                                "text": {
+                                                                                                                    "runs": [
+                                                                                                                        {
+                                                                                                                            "text": "提交"
+                                                                                                                        }
+                                                                                                                    ]
+                                                                                                                },
+                                                                                                                "serviceEndpoint": {
+                                                                                                                    "clickTrackingParams": "CAoQ8FsiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                                    "commandMetadata": {
+                                                                                                                        "webCommandMetadata": {
+                                                                                                                            "sendPost": true,
+                                                                                                                            "apiUrl": "/youtubei/v1/flag/flag"
+                                                                                                                        }
+                                                                                                                    },
+                                                                                                                    "flagEndpoint": {
+                                                                                                                        "flagAction": "ChZFd0cza3NkNnJLWWRNYmxxSDc2SW93EA5yAggC"
+                                                                                                                    }
+                                                                                                                },
+                                                                                                                "accessibility": {
+                                                                                                                    "label": "提交"
+                                                                                                                },
+                                                                                                                "trackingParams": "CAoQ8FsiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                                "accessibilityData": {
+                                                                                                                    "accessibilityData": {
+                                                                                                                        "label": "提交"
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        },
+                                                                                                        "cancelButton": {
+                                                                                                            "buttonRenderer": {
+                                                                                                                "style": "STYLE_TEXT",
+                                                                                                                "size": "SIZE_DEFAULT",
+                                                                                                                "text": {
+                                                                                                                    "runs": [
+                                                                                                                        {
+                                                                                                                            "text": "取消"
+                                                                                                                        }
+                                                                                                                    ]
+                                                                                                                },
+                                                                                                                "accessibility": {
+                                                                                                                    "label": "取消"
+                                                                                                                },
+                                                                                                                "trackingParams": "CAkQ8FsiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                                "accessibilityData": {
+                                                                                                                    "accessibilityData": {
+                                                                                                                        "label": "取消"
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        },
+                                                                                                        "primaryIsCancel": false
+                                                                                                    }
+                                                                                                },
+                                                                                                "popupType": "DIALOG"
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            },
+                                                                            "trackingParams": "CAYQ1LYLIhMIqYCusqriiQMVtWtMCB1iHywf"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "menuServiceItemRenderer": {
+                                                                            "text": {
+                                                                                "runs": [
+                                                                                    {
+                                                                                        "text": "举报用户"
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            "serviceEndpoint": {
+                                                                                "clickTrackingParams": "CAYQ1LYLIhMIqYCusqriiQMVtWtMCB1iHywf",
+                                                                                "commandMetadata": {
+                                                                                    "webCommandMetadata": {
+                                                                                        "sendPost": true,
+                                                                                        "apiUrl": "/youtubei/v1/flag/get_form"
+                                                                                    }
+                                                                                },
+                                                                                "getReportFormEndpoint": {
+                                                                                    "params": "sAEBugEYVUNFd0cza3NkNnJLWWRNYmxxSDc2SW93"
+                                                                                }
+                                                                            },
+                                                                            "trackingParams": "CAYQ1LYLIhMIqYCusqriiQMVtWtMCB1iHywf",
+                                                                            "command": {
+                                                                                "clickTrackingParams": "CAYQ1LYLIhMIqYCusqriiQMVtWtMCB1iHywf",
+                                                                                "openPopupAction": {
+                                                                                    "popup": {
+                                                                                        "multiPageMenuRenderer": {
+                                                                                            "trackingParams": "CAcQ_6sBIhMIqYCusqriiQMVtWtMCB1iHywf",
+                                                                                            "style": "MULTI_PAGE_MENU_STYLE_TYPE_REPORT_CHANNEL",
+                                                                                            "showLoadingSpinner": true
+                                                                                        }
+                                                                                    },
+                                                                                    "popupType": "MODAL",
+                                                                                    "uniqueId": "tpseu_channel_report_form_wizard",
+                                                                                    "beReused": true
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        },
+                                                        "popupType": "RESPONSIVE_DROPDOWN"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "icon": {
+                                        "iconType": "FLAG"
+                                    },
+                                    "accessibility": {
+                                        "label": "举报用户"
+                                    },
+                                    "trackingParams": "CAYQ1LYLIhMIqYCusqriiQMVtWtMCB1iHywf",
+                                    "accessibilityData": {
+                                        "accessibilityData": {
+                                            "label": "举报用户"
+                                        }
+                                    }
+                                }
+                            },
+                            "shareChannel": {
+                                "buttonRenderer": {
+                                    "style": "STYLE_DEFAULT",
+                                    "size": "SIZE_DEFAULT",
+                                    "text": {
+                                        "runs": [
+                                            {
+                                                "text": "分享频道"
+                                            }
+                                        ]
+                                    },
+                                    "icon": {
+                                        "iconType": "SHARE"
+                                    },
+                                    "trackingParams": "CAEQ8FsiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                    "accessibilityData": {
+                                        "accessibilityData": {
+                                            "label": "分享频道"
+                                        }
+                                    },
+                                    "command": {
+                                        "clickTrackingParams": "CAEQ8FsiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                        "commandMetadata": {
+                                            "webCommandMetadata": {
+                                                "sendPost": true
+                                            }
+                                        },
+                                        "signalServiceEndpoint": {
+                                            "signal": "CLIENT_SIGNAL",
+                                            "actions": [
+                                                {
+                                                    "clickTrackingParams": "CAEQ8FsiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                    "openPopupAction": {
+                                                        "popup": {
+                                                            "menuPopupRenderer": {
+                                                                "items": [
+                                                                    {
+                                                                        "menuServiceItemRenderer": {
+                                                                            "text": {
+                                                                                "runs": [
+                                                                                    {
+                                                                                        "text": "分享频道"
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            "trackingParams": "CAQQ0rYLGAEiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                            "command": {
+                                                                                "clickTrackingParams": "CAQQ0rYLGAEiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                "commandMetadata": {
+                                                                                    "webCommandMetadata": {
+                                                                                        "sendPost": true,
+                                                                                        "apiUrl": "/youtubei/v1/share/get_share_panel"
+                                                                                    }
+                                                                                },
+                                                                                "shareEntityServiceEndpoint": {
+                                                                                    "serializedShareEntity": "GhhVQ0V3RzNrc2Q2cktZZE1ibHFINzZJb3c%3D",
+                                                                                    "commands": [
+                                                                                        {
+                                                                                            "clickTrackingParams": "CAQQ0rYLGAEiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                            "openPopupAction": {
+                                                                                                "popup": {
+                                                                                                    "unifiedSharePanelRenderer": {
+                                                                                                        "trackingParams": "CAUQjmIiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                        "showLoadingSpinner": true
+                                                                                                    }
+                                                                                                },
+                                                                                                "popupType": "DIALOG",
+                                                                                                "beReused": true
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "menuServiceItemRenderer": {
+                                                                            "text": {
+                                                                                "runs": [
+                                                                                    {
+                                                                                        "text": "复制频道 ID"
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            "trackingParams": "CAIQ07YLGAIiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                            "command": {
+                                                                                "clickTrackingParams": "CAIQ07YLGAIiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                "copyTextEndpoint": {
+                                                                                    "text": "UCEwG3ksd6rKYdMblqH76Iow",
+                                                                                    "successActions": [
+                                                                                        {
+                                                                                            "clickTrackingParams": "CAIQ07YLGAIiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                            "commandMetadata": {
+                                                                                                "webCommandMetadata": {
+                                                                                                    "sendPost": true
+                                                                                                }
+                                                                                            },
+                                                                                            "signalServiceEndpoint": {
+                                                                                                "signal": "CLIENT_SIGNAL",
+                                                                                                "actions": [
+                                                                                                    {
+                                                                                                        "clickTrackingParams": "CAIQ07YLGAIiEwipgK6yquKJAxW1a0wIHWIfLB8=",
+                                                                                                        "openPopupAction": {
+                                                                                                            "popup": {
+                                                                                                                "notificationActionRenderer": {
+                                                                                                                    "responseText": {
+                                                                                                                        "runs": [
+                                                                                                                            {
+                                                                                                                                "text": "频道 ID 已复制到剪贴板"
+                                                                                                                            }
+                                                                                                                        ]
+                                                                                                                    },
+                                                                                                                    "trackingParams": "CAMQuWoiEwipgK6yquKJAxW1a0wIHWIfLB8="
+                                                                                                                }
+                                                                                                            },
+                                                                                                            "popupType": "TOAST"
+                                                                                                        }
+                                                                                                    }
+                                                                                                ]
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        },
+                                                        "popupType": "RESPONSIVE_DROPDOWN"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "targetId": "684bc2f4-0000-2eea-be51-582429b6e6b8"
+            }
+        }
+    ]
+}

@@ -145,3 +145,36 @@ WILL.LU
 ## 贡献
 
 欢迎提交Issue和Pull Request！
+
+
+
+## 重要代码备注
+
+### 在数据库中选择当天需要爬取的频道ID
+SELECT 
+    cb.channel_id,
+    cb.is_benchmark,
+    MAX(cc.crawl_date) as last_crawl_date
+FROM channel_base cb
+LEFT JOIN channel_crawl cc ON cb.channel_id = cc.channel_id
+WHERE 
+    -- 排除今天已爬取的
+    cb.channel_id NOT IN (
+        SELECT channel_id 
+        FROM channel_crawl 
+        WHERE crawl_date = CURRENT_DATE
+    )
+    -- 排除黑名单
+    AND cb.is_blacklist = 0
+GROUP BY 
+    cb.channel_id,
+    cb.is_benchmark
+ORDER BY 
+    -- 对标频道优先
+    cb.is_benchmark DESC,
+    -- 其次按最后爬取时间排序（NULL值最先）
+    CASE 
+        WHEN MAX(cc.crawl_date) IS NULL THEN 0 
+        ELSE 1 
+    END,
+    last_crawl_date ASC;

@@ -1,105 +1,153 @@
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Process, Pool, cpu_count, Value
 import time
 import signal
 import sys
 from crawler import YoutubeCrawler
+from channel_crawler import ChannelCrawler
 from db_manager import DBManager
 from log_manager import LogManager
 import configparser
+import ctypes
 
-def crawl_worker(url_data):
-    """工作进程的处理函数"""
-    try:
-        # 获取日志记录器
-        logger = LogManager().get_logger()
-        logger.info(f"开始处理URL: {url_data['url']}")
-        
-        # 创建爬虫实例
-        crawler = YoutubeCrawler(worker_id=url_data['id'])
-        
-        # 初始化爬虫
-        crawler.setup()
-        
-        # 处理URL
-        crawler.process_url(url_data)
-        
-        logger.info(f"URL处理完成: {url_data['url']}")
-        return True
-        
-    except Exception as e:
-        logger.error(f"处理URL时出错: {url_data['url']} - {str(e)}")
-        return False
-        
-    finally:
-        # 清理资源
-        crawler.cleanup()
+# 使用多进程共享变量
+should_exit = Value(ctypes.c_bool, False)
 
 def signal_handler(signum, frame):
     """处理Ctrl+C信号"""
     logger = LogManager().get_logger()
     logger.info("\n接收到终止信号，正在安全退出...")
-    sys.exit(0)
+    
+    # 给进程一些时间来清理资源
+    time.sleep(2)
+    
+    # 设置共享的退出标志
+    should_exit.value = True
+
+def channel_worker(worker_id=None):
+    """频道爬取工作进程"""
+    try:
+        logger = LogManager().get_logger()
+        logger.info(f"启动频道爬取进程 {worker_id}")
+        
+        crawler = ChannelCrawler(worker_id=worker_id)
+        crawler.setup()
+        
+        while not should_exit.value:
+            try:
+                # 获取未爬取的频道
+                db = DBManager()
+                channel = db.get_uncrawled_channel()
+                
+                if not channel:
+                    logger.info(f"[进程 {worker_id}] 所有频道今天都已经爬取过，等待5分钟后继续...")
+                    time.sleep(300)
+                    continue
+                
+                logger.info(
+                    f"[进程 {worker_id}] 开始爬取频道: "
+                    f"channel_id={channel['channel_id']}, "
+                    f"is_benchmark={channel['is_benchmark']}, "
+                    f"url={channel['url']}"
+                )
+                
+                # 爬取频道信息
+                channel_info = crawler.crawl_channel(channel['url'])
+                if channel_info:
+                    # 确保channel_id正确
+                    channel_info['channel_id'] = channel['channel_id']
+                    # 保存到数据库
+                    db = DBManager()
+                    try:
+                        db.insert_channel_crawl(channel_info)
+                        logger.info(f"[进程 {worker_id}] 成功保存频道数据: {channel['channel_id']}")
+                    except Exception as e:
+                        if "Duplicate entry" not in str(e):
+                            raise
+                        logger.info(f"[进程 {worker_id}] 频道数据已存在: {channel['channel_id']}")
+                else:
+                    logger.error(f"[进程 {worker_id}] 爬取频道失败: {channel['channel_id']}")
+                
+                # 等待一段时间再处理下一个频道
+                time.sleep(2)
+                
+            except Exception as e:
+                logger.error(f"[进程 {worker_id}] 处理频道时出错: {str(e)}")
+                time.sleep(60)
+                continue
+                
+    except Exception as e:
+        logger.error(f"[进程 {worker_id}] 频道爬取进程出错: {str(e)}")
+    finally:
+        logger.info(f"[进程 {worker_id}] 正在清理资源...")
+        crawler.cleanup()
+        logger.info(f"[进程 {worker_id}] 进程结束")
 
 def main():
     """主函数"""
-    # 注册信号处理器
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
-    # 获取日志记录器
     logger = LogManager().get_logger()
+    channel_procs = []
     
     try:
         logger.info("程序启动，按Ctrl+C可以安全退出")
         
-        # 读取配置文件和设置进程数
+        # 读取配置文件
         config = configparser.ConfigParser()
-        config.read('config.ini')
-        config_processes = int(config['crawler'].get('num_processes', 1))
-        retry_wait = int(config['crawler'].get('retry_wait', 300))
-        max_processes = cpu_count() - 1
-        num_processes = min(config_processes, max_processes)
+        config.read('config.ini', encoding='utf-8')
         
-        logger.info(f"配置进程数: {config_processes}, CPU核心数-1: {max_processes}")
-        logger.info(f"将使用 {num_processes} 个进程")
+        # 读取开关配置
+        enable_video = int(config['crawler'].get('enable_video_crawler', 0))
+        enable_channel = int(config['crawler'].get('enable_channel_crawler', 0))
         
-        while True:  # 永久循环
-            try:
-                # 获取活跃的搜索关键词
-                db = DBManager()
-                try:
-                    # 一次性获取所有需要的关键词
-                    keywords = db.get_active_keywords(num_processes)
-                    
-                    if not keywords:
-                        logger.info("所有关键词今天都已经抓取过，等待5分钟后继续...")
-                        time.sleep(300)  # 等待5分钟
-                        continue  # 继续循环
-                    
-                    # 创建进程池
-                    with Pool(processes=len(keywords)) as pool:
-                        # 分配任务给工作进程
-                        results = pool.map(crawl_worker, keywords)
-                        
-                        # 检查结果
-                        success = sum(1 for r in results if r)
-                        logger.info(f"本轮处理完成: {success}/{len(keywords)} 个关键词成功")
-                    
-                finally:
-                    db.disconnect()  # 确保数据库连接被关闭
-                
-                # 等待一段时间再开始下一轮
-                time.sleep(60)  # 等待60秒
-                
-            except Exception as e:
-                logger.error(f"处理一轮关键词时出错: {str(e)}")
-                logger.info(f"等待 {retry_wait} 秒后重试...")
-                time.sleep(retry_wait)
-                
+        if not enable_video and not enable_channel:
+            logger.error("视频爬取和频道爬取都已关闭，程序退出")
+            return
+            
+        # 视频爬取进程配置
+        if enable_video:
+            config_processes = int(config['crawler'].get('num_processes', 1))
+            retry_wait = int(config['crawler'].get('retry_wait', 300))
+            max_processes = cpu_count() - 1
+            num_processes = min(config_processes, max_processes)
+            logger.info(f"视频爬取已启用，进程数: {num_processes}")
+        else:
+            logger.info("视频爬取已关闭")
+            
+        # 频道爬取进程配置
+        if enable_channel:
+            channel_processes = int(config['crawler'].get('channel_processes', 1))
+            logger.info(f"频道爬取已启用，进程数: {channel_processes}")
+            
+            # 启动频道爬取进程
+            for i in range(channel_processes):
+                proc = Process(target=channel_worker, kwargs={'worker_id': i})
+                proc.start()
+                channel_procs.append(proc)
+                logger.info(f"频道爬取进程 {i+1} 已启动")
+        else:
+            logger.info("频道爬取已关闭")
+        
+        # 等待所有进程结束
+        while any(p.is_alive() for p in channel_procs):
+            if should_exit.value:
+                logger.info("等待进程清理资源...")
+                # 给进程一些时间来清理
+                time.sleep(5)
+                break
+            time.sleep(1)
+            
     except Exception as e:
         logger.error(f"程序执行出错: {str(e)}")
     finally:
         logger.info("程序结束")
+        # 确保所有进程都已经结束
+        for proc in channel_procs:
+            if proc.is_alive():
+                proc.join(timeout=10)  # 最多等待10秒
+                if proc.is_alive():
+                    proc.terminate()
 
 if __name__ == "__main__":
     main() 

@@ -5,6 +5,7 @@ import json
 import time
 from db_manager import DBManager
 from log_manager import LogManager
+import traceback
 
 class Utils:
     """通用工具类，包含各种辅助方法"""
@@ -234,3 +235,147 @@ class Utils:
             Utils.log(f"已保存响应JSON到文件: {filename}")
         except Exception as e:
             Utils.log(f"保存响应JSON时出错: {str(e)}", 'ERROR')
+    
+    @staticmethod
+    def analyze_channel_json_response(json_data):
+        """分析频道JSON响应数据"""
+        try:
+            # 获取about信息
+            about_renderer = None
+            if 'onResponseReceivedEndpoints' in json_data:
+                endpoints = json_data.get('onResponseReceivedEndpoints', [])
+                for endpoint in endpoints:
+                    if 'appendContinuationItemsAction' in endpoint:
+                        items = endpoint.get('appendContinuationItemsAction', {}).get('continuationItems', [])
+                        for item in items:
+                            if 'aboutChannelRenderer' in item:
+                                about_renderer = item.get('aboutChannelRenderer', {}).get('metadata', {}).get('aboutChannelViewModel', {})
+                                Utils.log(f"找到aboutChannelViewModel: {json.dumps(about_renderer, ensure_ascii=False)[:1000]}")
+                                break
+            
+            if not about_renderer:
+                Utils.log("未找到aboutChannelViewModel，尝试其他路径")
+                # 尝试其他可能的路径
+                if 'metadata' in json_data:
+                    about_renderer = json_data.get('metadata', {}).get('channelMetadataRenderer', {})
+                    Utils.log(f"从metadata路径找到信息: {json.dumps(about_renderer, ensure_ascii=False)[:1000]}")
+            
+            if not about_renderer:
+                Utils.log("无法找到频道信息")
+                return None
+            
+            # 从about中提取信息
+            channel_data = {}
+            
+            # 频道ID - 必需字段
+            channel_id = about_renderer.get('channelId', '')
+            if not channel_id:
+                Utils.log("未找到channel_id，放弃处理")
+                return None
+            channel_data['channel_id'] = channel_id
+            Utils.log(f"提取到channel_id: {channel_id}")
+            
+            # 频道名称
+            channel_name = ''
+            canonical_url = about_renderer.get('canonicalChannelUrl', '')
+            if '@' in canonical_url:
+                channel_name = canonical_url.split('@')[1].split('/')[0]
+            if not channel_name:
+                channel_name = about_renderer.get('title', {}).get('simpleText', '') or \
+                             about_renderer.get('title', '')
+            channel_data['channel_name'] = channel_name
+            Utils.log(f"提取到channel_name: {channel_name}")
+            
+            # 描述
+            description = about_renderer.get('description', '') or \
+                         about_renderer.get('description', {}).get('simpleText', '')
+            channel_data['description'] = description[:1000] if description else ''
+            Utils.log(f"提取到description: {description}")
+            
+            # 国家
+            country = about_renderer.get('country', '') or \
+                     about_renderer.get('country', {}).get('simpleText', '')
+            channel_data['country'] = country[:50] if country else ''
+            Utils.log(f"提取到country: {country}")
+            
+            # 订阅者数量
+            subscriber_text = about_renderer.get('subscriberCountText', '') or \
+                            about_renderer.get('subscriberCount', '')
+            subscriber_count = 0
+            try:
+                if isinstance(subscriber_text, dict):
+                    subscriber_text = subscriber_text.get('simpleText', '0')
+                if '万' in str(subscriber_text):
+                    subscriber_count = int(float(str(subscriber_text).replace('万位订阅者', '')) * 10000)
+                else:
+                    subscriber_count = int(str(subscriber_text).replace('位订阅者', '').replace(',', ''))
+            except (ValueError, TypeError, AttributeError) as e:
+                Utils.log(f"转换订阅者数量出错: {str(e)}, 原始文本: {subscriber_text}")
+            channel_data['subscriber_count'] = subscriber_count
+            Utils.log(f"提取到subscriber_count: {subscriber_count}")
+            
+            # 观看次数
+            view_text = about_renderer.get('viewCountText', '') or \
+                       about_renderer.get('viewCount', '')
+            view_count = 0
+            try:
+                if isinstance(view_text, dict):
+                    view_text = view_text.get('simpleText', '0')
+                view_count = int(str(view_text).replace('次观看', '').replace(',', ''))
+            except (ValueError, TypeError, AttributeError) as e:
+                Utils.log(f"转换观看次数出错: {str(e)}, 原始文本: {view_text}")
+            channel_data['view_count'] = view_count
+            Utils.log(f"提取到view_count: {view_count}")
+            
+            # 加入日期
+            joined_text = None
+            if isinstance(about_renderer.get('joinedDateText', {}), dict):
+                joined_text = about_renderer.get('joinedDateText', {}).get('content', '')
+            else:
+                joined_text = about_renderer.get('joinedDateText', '')
+            
+            joined_date = None
+            if joined_text:
+                try:
+                    date_parts = str(joined_text).replace('注册', '').replace('年', '-').replace('月', '-').replace('日', '').split('-')
+                    joined_date = f"{date_parts[0]}-{date_parts[1].zfill(2)}-{date_parts[2].zfill(2)}"
+                except (IndexError, ValueError, AttributeError) as e:
+                    Utils.log(f"转换加入日期出错: {str(e)}, 原始文本: {joined_text}")
+            channel_data['joined_date'] = joined_date
+            Utils.log(f"提取到joined_date: {joined_date}")
+            
+            # 视频数量
+            video_text = about_renderer.get('videoCountText', '') or \
+                        about_renderer.get('videoCount', '')
+            video_count = 0
+            try:
+                if isinstance(video_text, dict):
+                    video_text = video_text.get('simpleText', '0')
+                video_count = int(str(video_text).replace(' 个视频', '').replace(',', ''))
+            except (ValueError, TypeError, AttributeError) as e:
+                Utils.log(f"转换视频数量出错: {str(e)}, 原始文本: {video_text}")
+            channel_data['video_count'] = video_count
+            Utils.log(f"提取到video_count: {video_count}")
+            
+            # 频道URL
+            canonical_url = about_renderer.get('canonicalChannelUrl', '') or \
+                           about_renderer.get('canonicalBaseUrl', '')
+            if canonical_url.startswith('http://www.youtube.com') or canonical_url.startswith('https://www.youtube.com'):
+                canonical_url = canonical_url.split('youtube.com')[1]
+            channel_data['canonical_url'] = canonical_url
+            Utils.log(f"提取到canonical_url: {canonical_url}")
+            
+            # 验证必要字段
+            if not channel_data['channel_id'] or not channel_data['channel_name']:
+                Utils.log("缺少必要字段，放弃处理")
+                return None
+            
+            # 打印最终结果用于调试
+            Utils.log(f"解析结果: {json.dumps(channel_data, ensure_ascii=False)}")
+            
+            return channel_data
+            
+        except Exception as e:
+            Utils.log(f"分析频道JSON数据时出错: {str(e)}", 'ERROR')
+            Utils.log(f"错误详情: {traceback.format_exc()}", 'ERROR')
+            return None

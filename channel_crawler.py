@@ -130,7 +130,7 @@ class ChannelCrawler:
                     # 获取页面上的channel_name
                     page_channel_name = None
                     try:
-                        channel_name_xpath = "/html/body/ytd-app/div[1]/ytd-page-manager/ytd-browse/div[3]/ytd-tabbed-page-header/tp-yt-app-header-layout/div/tp-yt-app-header/div[2]/div/div[2]/yt-page-header-renderer/yt-page-header-view-model/div/div[1]/div/yt-dynamic-text-view-model/h1/span"
+                        channel_name_xpath = "//*[@id=\"page-header\"]/yt-page-header-renderer/yt-page-header-view-model/div/div[1]/div/yt-dynamic-text-view-model/h1/span"
                         channel_name_element = WebDriverWait(self.driver, 10).until(
                             EC.presence_of_element_located((By.XPATH, channel_name_xpath))
                         )
@@ -138,27 +138,30 @@ class ChannelCrawler:
                         self.log(f"从页面获取到channel_name: {page_channel_name}")
                     except Exception as e:
                         self.log(f"获取页面channel_name失败: {str(e)}")
-                        page_channel_name = None
+                        self.log("频道不存在，终止处理")
+                        return None
+                    
+                    # 获取频道头像URL
+                    avatar_url = None
+                    try:
+                        avatar_xpath = "//*[@id=\"page-header\"]/yt-page-header-renderer/yt-page-header-view-model/div/div[1]/yt-decorated-avatar-view-model/yt-avatar-shape/div/div/div/img"
+                        avatar_element = WebDriverWait(self.driver, 5).until(
+                            EC.presence_of_element_located((By.XPATH, avatar_xpath))
+                        )
+                        avatar_url = avatar_element.get_attribute('src')
+                        self.log(f"从页面获取到avatar_url: {avatar_url}")
+                    except Exception as e:
+                        self.log(f"获取频道头像URL失败: {str(e)}")
+                        avatar_url = None
                     
                     # 点击"显示更多"区域
                     try:
-                        # 定义可能的XPATH列表
-                        show_more_xpaths = [
-                            """/html/body/ytd-app/div[1]/ytd-page-manager/ytd-browse/div[3]/ytd-tabbed-page-header/tp-yt-app-header-layout/div/tp-yt-app-header/div[2]/div/div[2]/yt-page-header-renderer/yt-page-header-view-model/div/div[1]/div/yt-description-preview-view-model/truncated-text""",
-                            """/html/body/ytd-app/div[1]/ytd-page-manager/ytd-browse/div[3]/ytd-tabbed-page-header/tp-yt-app-header-layout/div/tp-yt-app-header/div[2]/div/div/yt-page-header-renderer/yt-page-header-view-model/div/div[1]/div/yt-description-preview-view-model/truncated-text"""
-                        ]
+                        show_more_xpath = """//*[@id="page-header"]/yt-page-header-renderer/yt-page-header-view-model/div/div[1]/div/yt-description-preview-view-model/truncated-text/truncated-text-content/button/span/span"""
                         
-                        # 尝试每个XPATH
-                        show_more_element = None
-                        for xpath in show_more_xpaths:
-                            try:
-                                show_more_element = WebDriverWait(self.driver, 5).until(
-                                    EC.presence_of_element_located((By.XPATH, xpath))
-                                )
-                                if show_more_element:
-                                    break
-                            except TimeoutException:
-                                continue
+                        # 直接尝试定位元素
+                        show_more_element = WebDriverWait(self.driver, 5).until(
+                            EC.presence_of_element_located((By.XPATH, show_more_xpath))
+                        )
                         
                         if show_more_element:
                             # 确保元素在视图中
@@ -238,6 +241,11 @@ class ChannelCrawler:
                         # 解析频道信息
                         channel_info = Utils.analyze_channel_json_response(response_json, page_channel_name)
                         if channel_info:
+                            # 添加头像URL到频道信息中
+                            if avatar_url:
+                                channel_info['avatar_url'] = avatar_url
+                                self.log("已将avatar_url添加到频道信息中")
+                            
                             self.log("成功解析频道信息")
                             return channel_info
                         else:

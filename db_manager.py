@@ -582,9 +582,9 @@ class DBManager:
                 INSERT INTO channel_crawl (
                     channel_id, channel_name, description,
                     subscriber_count, video_count, view_count,
-                    joined_date, country, crawl_date, canonical_base_url
+                    joined_date, country, crawl_date, canonical_base_url, avatar_url
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_DATE, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_DATE, %s, %s
                 )
             """
             
@@ -597,7 +597,8 @@ class DBManager:
                 channel_info['view_count'],
                 channel_info['joined_date'],
                 channel_info['country'],
-                channel_info['canonical_url']
+                channel_info['canonical_url'],
+                channel_info.get('avatar_url')  # 使用get方法避免键不存在的情况
             )
             
             cursor = self.connection.cursor()

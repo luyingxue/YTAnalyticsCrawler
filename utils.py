@@ -309,10 +309,19 @@ class Utils:
             try:
                 if isinstance(subscriber_text, dict):
                     subscriber_text = subscriber_text.get('simpleText', '0')
-                if '万' in str(subscriber_text):
-                    subscriber_count = int(float(str(subscriber_text).replace('万位订阅者', '')) * 10000)
+                subscriber_str = str(subscriber_text)
+                
+                # 处理英文格式: "K subscribers" / "M subscribers"
+                if 'subscribers' in subscriber_str:
+                    num_str = subscriber_str.replace(' subscribers', '').replace(',', '')
+                    if 'K' in num_str:
+                        subscriber_count = int(float(num_str.replace('K', '')) * 1000)
+                    elif 'M' in num_str:
+                        subscriber_count = int(float(num_str.replace('M', '')) * 1000000)
+                    else:
+                        subscriber_count = int(num_str)
                 else:
-                    subscriber_count = int(str(subscriber_text).replace('位订阅者', '').replace(',', ''))
+                    subscriber_count = int(subscriber_str.replace(',', ''))
             except (ValueError, TypeError, AttributeError) as e:
                 Utils.log(f"转换订阅者数量出错: {str(e)}, 原始文本: {subscriber_text}")
             channel_data['subscriber_count'] = subscriber_count
@@ -325,7 +334,13 @@ class Utils:
             try:
                 if isinstance(view_text, dict):
                     view_text = view_text.get('simpleText', '0')
-                view_count = int(str(view_text).replace('次观看', '').replace(',', ''))
+                view_str = str(view_text)
+                
+                # 处理英文格式: "views"
+                if 'views' in view_str:
+                    view_count = int(view_str.replace(' views', '').replace(',', ''))
+                else:
+                    view_count = int(view_str.replace(',', ''))
             except (ValueError, TypeError, AttributeError) as e:
                 Utils.log(f"转换观看次数出错: {str(e)}, 原始文本: {view_text}")
             channel_data['view_count'] = view_count
@@ -341,8 +356,20 @@ class Utils:
             joined_date = None
             if joined_text:
                 try:
-                    date_parts = str(joined_text).replace('注册', '').replace('年', '-').replace('月', '-').replace('日', '').split('-')
-                    joined_date = f"{date_parts[0]}-{date_parts[1].zfill(2)}-{date_parts[2].zfill(2)}"
+                    joined_str = str(joined_text)
+                    # 处理英文格式: "Joined Oct 5, 2024"
+                    if 'Joined' in joined_str:
+                        month_dict = {
+                            'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+                            'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+                            'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+                        }
+                        parts = joined_str.replace('Joined ', '').replace(',', '').split()
+                        if len(parts) >= 3:
+                            month = month_dict.get(parts[0], '01')
+                            day = parts[1].zfill(2)
+                            year = parts[2]
+                            joined_date = f"{year}-{month}-{day}"
                 except (IndexError, ValueError, AttributeError) as e:
                     Utils.log(f"转换加入日期出错: {str(e)}, 原始文本: {joined_text}")
             channel_data['joined_date'] = joined_date
@@ -355,7 +382,13 @@ class Utils:
             try:
                 if isinstance(video_text, dict):
                     video_text = video_text.get('simpleText', '0')
-                video_count = int(str(video_text).replace(' 个视频', '').replace(',', ''))
+                video_str = str(video_text)
+                
+                # 处理英文格式: " videos"
+                if ' videos' in video_str:
+                    video_count = int(video_str.replace(' videos', '').replace(',', ''))
+                else:
+                    video_count = int(video_str.replace(',', ''))
             except (ValueError, TypeError, AttributeError) as e:
                 Utils.log(f"转换视频数量出错: {str(e)}, 原始文本: {video_text}")
             channel_data['video_count'] = video_count

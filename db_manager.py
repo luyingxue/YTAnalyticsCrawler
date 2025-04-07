@@ -612,3 +612,46 @@ class DBManager:
             if self.connection:
                 self.connection.rollback()
             raise
+            
+    def delete_channel(self, channel_id):
+        """
+        从channel_base和channel_crawl表中删除指定channel_id的记录
+        Args:
+            channel_id: 要删除的频道ID
+        Returns:
+            bool: 是否成功删除
+        """
+        try:
+            self.connect()
+            self.connection.autocommit = False
+            cursor = self.connection.cursor()
+            
+            try:
+                # 先删除channel_crawl表记录（子表）
+                delete_crawl_query = "DELETE FROM channel_crawl WHERE channel_id = %s"
+                cursor.execute(delete_crawl_query, (channel_id,))
+                crawl_deleted = cursor.rowcount
+                
+                # 再删除channel_base表记录（父表）
+                delete_base_query = "DELETE FROM channel_base WHERE channel_id = %s"
+                cursor.execute(delete_base_query, (channel_id,))
+                base_deleted = cursor.rowcount
+                
+                self.connection.commit()
+                self.log(f"已删除不存在的频道记录: channel_id={channel_id}, 从channel_crawl删除{crawl_deleted}行, 从channel_base删除{base_deleted}行")
+                return True
+                
+            except Error as e:
+                self.connection.rollback()
+                self.log(f"删除频道记录失败: {str(e)}", 'ERROR')
+                return False
+                
+        except Error as e:
+            self.log(f"删除频道记录时发生错误: {str(e)}", 'ERROR')
+            return False
+        finally:
+            if cursor:
+                cursor.close()
+            if self.connection:
+                self.connection.autocommit = True
+                self.disconnect()

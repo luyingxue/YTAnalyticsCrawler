@@ -73,3 +73,7 @@ youtube_videos.csv
 # 已删除的旧文件
 YT_Proxy_Analytics.py
 browser_worker.py
+
+# 调试和响应文件夹
+debug/
+responses/

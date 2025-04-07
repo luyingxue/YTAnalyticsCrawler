@@ -74,6 +74,26 @@ class ChannelCrawler:
             chrome_options.add_argument(f'--proxy-server={proxy_url}')
             chrome_options.add_argument('--ignore-certificate-errors')
             
+            # 设置浏览器语言为英文
+            chrome_options.add_argument('--lang=en-US')
+            chrome_options.add_experimental_option('prefs', {'intl.accept_languages': 'en-US,en'})
+            
+            # 禁用图片和视频加载以提高性能
+            chrome_prefs = {
+                "profile.default_content_setting_values": {
+                    "images": 2,       # 1表示启用图片
+                    "media_stream": 2, # 禁用媒体流
+                    "plugins": 2,      # 禁用插件
+                    "video": 2         # 禁用视频
+                },
+                "profile.managed_default_content_settings": {
+                    "images": 2,
+                    "media_stream": 2
+                },
+                "intl.accept_languages": "en-US,en"
+            }
+            chrome_options.add_experimental_option("prefs", chrome_prefs)
+            
             self.driver = webdriver.Chrome(options=chrome_options)
             self.log("Chrome浏览器初始化成功")
             
@@ -130,15 +150,82 @@ class ChannelCrawler:
                     # 获取页面上的channel_name
                     page_channel_name = None
                     try:
-                        channel_name_xpath = "//*[@id=\"page-header\"]/yt-page-header-renderer/yt-page-header-view-model/div/div[1]/div/yt-dynamic-text-view-model/h1/span"
-                        channel_name_element = WebDriverWait(self.driver, 10).until(
-                            EC.presence_of_element_located((By.XPATH, channel_name_xpath))
-                        )
-                        page_channel_name = channel_name_element.text
-                        self.log(f"从页面获取到channel_name: {page_channel_name}")
+                        # 使用更简单的选择器
+                        selectors_to_try = [
+                            "//*[@id='channel-name']",
+                            "//h1[contains(@class, 'title')]",
+                            "//h1//span",
+                            "//*[@id='page-header']//h1//span"
+                        ]
+                        
+                        for selector in selectors_to_try:
+                            try:
+                                channel_name_element = WebDriverWait(self.driver, 5).until(
+                                    EC.presence_of_element_located((By.XPATH, selector))
+                                )
+                                page_channel_name = channel_name_element.text
+                                if page_channel_name:
+                                    self.log(f"从选择器 {selector} 获取到channel_name: {page_channel_name}")
+                                    break
+                            except Exception as selector_error:
+                                self.log(f"选择器 {selector} 未找到元素: {str(selector_error)}")
+                                continue
+                        
+                        # 如果所有选择器都失败，保存页面源码和截图以便调试
+                        if not page_channel_name:
+                            self.log("所有选择器都失败，保存页面源码和截图以便调试")
+                            timestamp = time.strftime("%Y%m%d_%H%M%S")
+                            
+                            # 保存页面源码
+                            debug_dir = "debug"
+                            if not os.path.exists(debug_dir):
+                                os.makedirs(debug_dir)
+                                
+                            source_path = os.path.join(debug_dir, f"page_source_{timestamp}.html")
+                            with open(source_path, "w", encoding="utf-8") as f:
+                                f.write(self.driver.page_source)
+                            self.log(f"已保存页面源码到: {source_path}")
+                            
+                            # 保存截图
+                            screenshot_path = os.path.join(debug_dir, f"screenshot_{timestamp}.png")
+                            self.driver.save_screenshot(screenshot_path)
+                            self.log(f"已保存页面截图到: {screenshot_path}")
+                            
+                            # 从URL中提取channel_id并删除数据库中的记录
+                            try:
+                                # 从URL中提取channel_id
+                                channel_id = url.split('/')[-1]
+                                if channel_id:
+                                    self.log(f"正在删除不存在的频道记录: {channel_id}")
+                                    db_manager = DBManager()
+                                    deleted = db_manager.delete_channel(channel_id)
+                                    if deleted:
+                                        self.log(f"成功删除不存在的频道记录: {channel_id}")
+                                    else:
+                                        self.log(f"删除不存在的频道记录失败: {channel_id}")
+                            except Exception as delete_err:
+                                self.log(f"删除不存在频道记录时出错: {str(delete_err)}", 'ERROR')
+                            
+                            return None
                     except Exception as e:
                         self.log(f"获取页面channel_name失败: {str(e)}")
                         self.log("频道不存在，终止处理")
+                        
+                        # 从URL中提取channel_id并删除数据库中的记录
+                        try:
+                            # 从URL中提取channel_id
+                            channel_id = url.split('/')[-1]
+                            if channel_id:
+                                self.log(f"正在删除不存在的频道记录: {channel_id}")
+                                db_manager = DBManager()
+                                deleted = db_manager.delete_channel(channel_id)
+                                if deleted:
+                                    self.log(f"成功删除不存在的频道记录: {channel_id}")
+                                else:
+                                    self.log(f"删除不存在的频道记录失败: {channel_id}")
+                        except Exception as delete_err:
+                            self.log(f"删除不存在频道记录时出错: {str(delete_err)}", 'ERROR')
+                            
                         return None
                     
                     # 获取频道头像URL

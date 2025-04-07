@@ -84,11 +84,13 @@ class ChannelCrawler:
                     "images": 2,       # 1表示启用图片
                     "media_stream": 2, # 禁用媒体流
                     "plugins": 2,      # 禁用插件
-                    "video": 2         # 禁用视频
+                    "video": 2,        # 禁用视频
+                    "sound": 2         # 禁用声音
                 },
                 "profile.managed_default_content_settings": {
                     "images": 2,
-                    "media_stream": 2
+                    "media_stream": 2,
+                    "sound": 2         # 禁用声音
                 },
                 "intl.accept_languages": "en-US,en"
             }

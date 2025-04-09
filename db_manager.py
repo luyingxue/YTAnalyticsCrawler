@@ -491,7 +491,7 @@ class DBManager:
                         cursor.execute(update_query, (result['channel_id'],))
                         
                         # 构建URL
-                        result['url'] = f"https://www.youtube.com/channel/{result['channel_id']}"
+                        result['url'] = f"https://www.youtube.com/channel/{result['channel_id']}/shorts"
                         self.log(f"获取到未爬取频道: channel_id={result['channel_id']}, is_benchmark={result['is_benchmark']}, last_crawl={result['last_crawl_date']}")
                         
                         # 提交事务

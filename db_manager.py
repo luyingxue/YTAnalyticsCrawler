@@ -1,5 +1,5 @@
 from log_manager import LogManager
-from models import ChannelModel, VideoModel, KeywordModel
+from src.models import ChannelModel, VideoModel, KeywordModel
 
 class DBManager:
     """数据库管理类"""

@@ -1,14 +1,10 @@
 import mysql.connector
 from mysql.connector import Error as MySQLError
-import configparser
 from log_manager import LogManager
-import random
-import time
 from contextlib import contextmanager
-from .base import DBBase
 from .exceptions import DBConnectionError, DBQueryError, DBPoolError
 
-class ConnectionPool(DBBase):
+class ConnectionPool:
     """数据库连接管理类
     
     提供数据库连接池功能，支持：
@@ -26,7 +22,7 @@ class ConnectionPool(DBBase):
             pool_size (int): 连接池大小，默认5
             pool_name (str): 连接池名称，默认"mypool"
         """
-        super().__init__(config)
+        self.config = config
         self.pool_size = pool_size
         self.pool_name = pool_name
         self.pool = None
@@ -64,6 +60,12 @@ class ConnectionPool(DBBase):
         except MySQLError as e:
             self.log(f"获取连接错误: {str(e)}", 'ERROR')
             raise DBConnectionError(f"获取连接错误: {str(e)}")
+            
+    def close_connection(self, connection):
+        """关闭数据库连接"""
+        if connection and connection.is_connected():
+            connection.close()
+            self.log("数据库连接已关闭")
             
     @contextmanager
     def transaction(self):

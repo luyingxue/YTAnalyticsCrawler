@@ -2,13 +2,16 @@ from log_manager import LogManager
 from db import create_connection_pool, DBError
 import time
 import random
+import os
 
 class DBManager:
     """数据库管理类"""
     
     def __init__(self):
         """初始化数据库管理器"""
-        self.connection_pool = create_connection_pool()
+        # 获取项目根目录下的config.ini路径
+        config_path = os.path.join(os.path.dirname(__file__), 'config.ini')
+        self.connection_pool = create_connection_pool(config_path)
         self.logger = LogManager().get_logger('DBManager')
         
     def log(self, message, level='INFO'):

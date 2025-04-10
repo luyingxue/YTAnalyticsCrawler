@@ -1,11 +1,12 @@
 from .pool import ConnectionPool
 from .exceptions import DBError, DBConnectionError, DBQueryError, DBPoolError
-import configparser
+from .config import DBConfig
+import os
 
 __all__ = [
     'ConnectionPool', 
     'create_connection_pool', 
-    'get_db_config',
+    'DBConfig',
     'DBError',
     'DBConnectionError',
     'DBQueryError',
@@ -15,21 +16,23 @@ __all__ = [
 # 全局连接池实例
 _global_pool = None
 
-def get_db_config(config_path='config.ini'):
-    """获取数据库配置"""
-    config = configparser.ConfigParser()
-    config.read(config_path)
-    return {
-        'host': config['database']['host'],
-        'database': config['database']['database'],
-        'user': config['database']['user'],
-        'password': config['database']['password']
-    }
-
-def create_connection_pool(config_path='config.ini', pool_size=5, pool_name="mypool"):
-    """创建数据库连接池（单例模式）"""
+def create_connection_pool(config_path: str = None, pool_size: int = 5, pool_name: str = "mypool") -> ConnectionPool:
+    """创建数据库连接池（单例模式）
+    
+    Args:
+        config_path: 配置文件路径，默认None（使用当前目录下的config.ini）
+        pool_size: 连接池大小，默认5
+        pool_name: 连接池名称，默认"mypool"
+        
+    Returns:
+        ConnectionPool实例
+    """
     global _global_pool
     if _global_pool is None:
-        config = get_db_config(config_path)
+        # 如果未指定配置文件路径，使用当前目录下的config.ini
+        if config_path is None:
+            config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.ini')
+            
+        config = DBConfig.get_config(config_path)
         _global_pool = ConnectionPool(config, pool_size, pool_name)
     return _global_pool 

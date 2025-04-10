@@ -107,7 +107,51 @@ class ChannelService:
             return None
         
     def get_uncrawled_channel(self):
-        """获取今天未爬取的频道，使用串行事务，带重试机制"""
+        """获取今天未爬取的频道，使用串行事务，带重试机制
+        
+        Supabase 实现方案：
+        1. 创建存储过程：
+        CREATE OR REPLACE FUNCTION get_next_uncrawled_channel()
+        RETURNS SETOF channel_base AS $$
+            UPDATE channel_base
+            SET last_crawl_date = CURRENT_DATE
+            WHERE channel_id = (
+                SELECT channel_id
+                FROM channel_base
+                WHERE (last_crawl_date IS NULL OR last_crawl_date != CURRENT_DATE)
+                    AND is_blacklist = false
+                ORDER BY 
+                    is_benchmark DESC,
+                    CASE WHEN last_crawl_date IS NULL THEN 1 ELSE 0 END DESC,
+                    last_crawl_date ASC
+                LIMIT 1
+            )
+            RETURNING *;
+        $$ LANGUAGE sql;
+        
+        2. 调用方式：
+        async def get_uncrawled_channel(self):
+            try:
+                result = await self.supabase.rpc(
+                    'get_next_uncrawled_channel'
+                ).execute()
+                
+                if result.data:
+                    channel = result.data[0]
+                    channel['url'] = f"https://www.youtube.com/channel/{channel['channel_id']}/shorts"
+                    return channel
+                return None
+                
+            except Exception as e:
+                self.log(f"获取未爬取频道时出错: {str(e)}", 'ERROR')
+                return None
+        
+        优势：
+        - 原子操作，无需显式事务控制
+        - 无需重试机制
+        - 更好的并发处理
+        - 性能更优
+        """
         max_retries = 3
         retry_count = 0
         

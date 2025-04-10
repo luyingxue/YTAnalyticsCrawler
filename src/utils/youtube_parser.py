@@ -2,9 +2,9 @@ import json
 import time
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
-from .logger import Logger
 from .data_converter import DataConverter
 from src.services import VideoService
+from .logger import Logger
 
 @dataclass
 class VideoData:
@@ -87,6 +87,8 @@ class YouTubeParser:
     
     def analyze_channel_json_response(self, json_data: Dict[str, Any], page_channel_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """分析频道JSON响应数据"""
+        self.logger.log("\n分析频道JSON响应数据...")
+        
         try:
             about_renderer = self._get_about_renderer(json_data)
             if not about_renderer:
@@ -290,4 +292,88 @@ class YouTubeParser:
                        about_renderer.get('canonicalBaseUrl', '')
         if canonical_url.startswith(('http://www.youtube.com', 'https://www.youtube.com')):
             canonical_url = canonical_url.split('youtube.com')[1]
-        return canonical_url 
+        return canonical_url
+
+    def parse_channel_info(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        解析频道信息
+        Args:
+            data: 频道数据
+        Returns:
+            解析后的频道信息
+        """
+        try:
+            if not data:
+                self.logger.log("没有频道数据可解析", 'WARNING')
+                return {}
+            
+            # 提取基本信息
+            channel_info = {
+                'channel_id': data.get('id'),
+                'title': data.get('snippet', {}).get('title'),
+                'description': data.get('snippet', {}).get('description'),
+                'published_at': data.get('snippet', {}).get('publishedAt'),
+                'thumbnails': data.get('snippet', {}).get('thumbnails', {}),
+                'statistics': data.get('statistics', {})
+            }
+            
+            return channel_info
+        except Exception as e:
+            self.logger.log(f"解析频道信息时出错: {str(e)}", 'ERROR')
+            return {}
+    
+    def parse_video_info(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        解析视频信息
+        Args:
+            data: 视频数据
+        Returns:
+            解析后的视频信息
+        """
+        try:
+            if not data:
+                self.logger.log("没有视频数据可解析", 'WARNING')
+                return {}
+            
+            # 提取基本信息
+            video_info = {
+                'video_id': data.get('id'),
+                'title': data.get('snippet', {}).get('title'),
+                'description': data.get('snippet', {}).get('description'),
+                'published_at': data.get('snippet', {}).get('publishedAt'),
+                'thumbnails': data.get('snippet', {}).get('thumbnails', {}),
+                'statistics': data.get('statistics', {})
+            }
+            
+            return video_info
+        except Exception as e:
+            self.logger.log(f"解析视频信息时出错: {str(e)}", 'ERROR')
+            return {}
+    
+    def parse_playlist_info(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        解析播放列表信息
+        Args:
+            data: 播放列表数据
+        Returns:
+            解析后的播放列表信息
+        """
+        try:
+            if not data:
+                self.logger.log("没有播放列表数据可解析", 'WARNING')
+                return {}
+            
+            # 提取基本信息
+            playlist_info = {
+                'playlist_id': data.get('id'),
+                'title': data.get('snippet', {}).get('title'),
+                'description': data.get('snippet', {}).get('description'),
+                'published_at': data.get('snippet', {}).get('publishedAt'),
+                'thumbnails': data.get('snippet', {}).get('thumbnails', {}),
+                'item_count': data.get('contentDetails', {}).get('itemCount')
+            }
+            
+            return playlist_info
+        except Exception as e:
+            self.logger.log(f"解析播放列表信息时出错: {str(e)}", 'ERROR')
+            return {} 

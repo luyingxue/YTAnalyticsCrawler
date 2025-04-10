@@ -5,8 +5,8 @@ import time
 import json
 from src.utils import ResponseProcessor, FileHandler, YouTubeParser
 from src.services import VideoService
+from src.utils.logger import Logger
 import logging
-from log_manager import LogManager
 
 class YoutubeCrawler:
     def __init__(self, proxy_path=r"C:\Program Files\browsermob-proxy-2.1.4\bin\browsermob-proxy.bat", worker_id=None):
@@ -21,7 +21,7 @@ class YoutubeCrawler:
         self.proxy = None
         self.driver = None
         self.worker_id = worker_id
-        self.logger = LogManager().get_logger(f'Crawler-{worker_id}' if worker_id else 'Crawler')
+        self.logger = Logger().get_logger(f'Crawler-{worker_id}' if worker_id else 'Crawler')
         self.video_service = VideoService()
         self.response_processor = ResponseProcessor()
         self.file_handler = FileHandler()
@@ -29,7 +29,7 @@ class YoutubeCrawler:
         
     def log(self, message, level='INFO'):
         """输出日志"""
-        LogManager.log(level, message)
+        self.logger.log(message, level)
         
     def setup(self):
         """设置爬虫环境"""

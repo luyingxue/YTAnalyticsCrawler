@@ -1,5 +1,4 @@
 from ..models import ChannelModel
-from log_manager import LogManager
 
 class ChannelService:
     """频道服务类，处理频道相关的业务逻辑"""
@@ -7,11 +6,12 @@ class ChannelService:
     def __init__(self):
         """初始化频道服务"""
         self.model = ChannelModel()
-        self.logger = LogManager().get_logger('ChannelService')
+        from src.utils import Logger
+        self.logger = Logger().get_logger('ChannelService')
         
     def log(self, message, level='INFO'):
         """输出日志"""
-        LogManager.log(level, message)
+        self.logger.log(message, level)
         
     def insert_channel_crawl(self, channel_info):
         """插入频道爬取数据"""

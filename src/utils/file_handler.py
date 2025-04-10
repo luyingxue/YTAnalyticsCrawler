@@ -1,12 +1,12 @@
 import json
 import time
 from typing import Dict, Any
-from .logger import Logger
 
 class FileHandler:
     """文件处理类"""
     
     def __init__(self):
+        from .logger import Logger
         self.logger = Logger()
     
     def save_response_json(self, json_data: Dict[str, Any], request_count: int, is_initial: bool = False) -> None:

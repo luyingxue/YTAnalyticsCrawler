@@ -1,5 +1,5 @@
 from ..models import KeywordModel
-from log_manager import LogManager
+from src.utils.logger import Logger
 
 class KeywordService:
     """关键词服务类，处理关键词相关的业务逻辑"""
@@ -7,11 +7,11 @@ class KeywordService:
     def __init__(self):
         """初始化关键词服务"""
         self.model = KeywordModel()
-        self.logger = LogManager().get_logger('KeywordService')
+        self.logger = Logger().get_logger('KeywordService')
         
     def log(self, message, level='INFO'):
         """输出日志"""
-        LogManager.log(level, message)
+        self.logger.log(message, level)
         
     def get_uncrawled_keywords(self):
         """获取未爬取的关键词"""

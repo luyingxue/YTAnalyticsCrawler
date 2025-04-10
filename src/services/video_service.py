@@ -1,5 +1,5 @@
 from ..models import VideoModel
-from log_manager import LogManager
+from src.utils.logger import Logger
 
 class VideoService:
     """视频服务类，处理视频相关的业务逻辑"""
@@ -7,11 +7,11 @@ class VideoService:
     def __init__(self):
         """初始化视频服务"""
         self.model = VideoModel()
-        self.logger = LogManager().get_logger('VideoService')
+        self.logger = Logger().get_logger('VideoService')
         
     def log(self, message, level='INFO'):
         """输出日志"""
-        LogManager.log(level, message)
+        self.logger.log(message, level)
         
     def save_video_data(self, video_data):
         """保存视频数据到数据库"""

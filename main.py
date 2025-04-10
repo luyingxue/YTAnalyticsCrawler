@@ -10,7 +10,7 @@ import time
 import signal
 from src.crawlers.crawler import YoutubeCrawler
 from src.crawlers.channel_crawler import ChannelCrawler
-from log_manager import LogManager
+from src.utils import Logger
 import configparser
 import ctypes
 from src.services import ChannelService, VideoService, KeywordService
@@ -20,7 +20,7 @@ should_exit = Value(ctypes.c_bool, False)
 
 def signal_handler(signum, frame):
     """处理Ctrl+C信号"""
-    logger = LogManager().get_logger()
+    logger = Logger().get_logger()
     logger.info("\n接收到终止信号，正在安全退出...")
     
     # 给进程一些时间来清理资源
@@ -32,7 +32,7 @@ def signal_handler(signum, frame):
 def channel_worker(worker_id=None):
     """频道爬取工作进程"""
     try:
-        logger = LogManager().get_logger()
+        logger = Logger().get_logger()
         logger.info(f"启动频道爬取进程 {worker_id}")
         
         crawler = ChannelCrawler(worker_id=worker_id)
@@ -105,7 +105,7 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
-    logger = LogManager().get_logger()
+    logger = Logger().get_logger()
     channel_procs = []
     
     try:

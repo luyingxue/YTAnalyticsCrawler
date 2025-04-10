@@ -1,6 +1,7 @@
 import time
 import re
-from typing import Optional
+import json
+from typing import Optional, Dict, Any, List
 from .logger import Logger
 
 class DataConverter:
@@ -78,4 +79,32 @@ class DataConverter:
             
         except Exception as e:
             self.logger.log(f"时间转换出错: {str(e)}", 'ERROR')
-            return time.strftime('%Y-%m-%d', time.localtime(current_time)) 
+            return time.strftime('%Y-%m-%d', time.localtime(current_time))
+    
+    def convert_to_json(self, data: Dict[str, Any]) -> str:
+        """
+        将数据转换为JSON字符串
+        Args:
+            data: 要转换的数据
+        Returns:
+            JSON字符串
+        """
+        try:
+            return json.dumps(data, ensure_ascii=False, indent=2)
+        except Exception as e:
+            self.logger.log(f"转换数据为JSON时出错: {str(e)}", 'ERROR')
+            return "{}"
+    
+    def parse_json(self, json_str: str) -> Dict[str, Any]:
+        """
+        解析JSON字符串
+        Args:
+            json_str: JSON字符串
+        Returns:
+            解析后的数据
+        """
+        try:
+            return json.loads(json_str)
+        except Exception as e:
+            self.logger.log(f"解析JSON字符串时出错: {str(e)}", 'ERROR')
+            return {} 

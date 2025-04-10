@@ -9,7 +9,6 @@ import time
 import json
 from src.utils import ResponseProcessor, YouTubeParser
 from src.services import ChannelService
-from log_manager import LogManager
 import configparser
 import random
 from datetime import datetime
@@ -25,13 +24,14 @@ class ChannelCrawler:
         self.server = None
         self.proxy = None
         self.driver = None
-        self.logger = LogManager().get_logger('ChannelCrawler')
+        from src.utils import Logger
+        self.logger = Logger()
         self.response_processor = ResponseProcessor()
         self.youtube_parser = YouTubeParser()
         
     def log(self, message, level='INFO'):
         """输出日志"""
-        LogManager.log(level, message)
+        self.logger.log(message, level, self.worker_id)
         
     def setup(self):
         """初始化爬虫"""

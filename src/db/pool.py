@@ -1,6 +1,6 @@
 import mysql.connector
 from mysql.connector import Error as MySQLError
-from log_manager import LogManager
+from src.utils.logger import Logger
 from contextlib import contextmanager
 from .exceptions import DBConnectionError, DBQueryError, DBPoolError
 
@@ -26,11 +26,11 @@ class ConnectionPool:
         self.pool_size = pool_size
         self.pool_name = pool_name
         self.pool = None
-        self.logger = LogManager().get_logger('ConnectionPool')
+        self.logger = Logger()
         
     def log(self, message, level='INFO'):
         """输出日志"""
-        LogManager.log(level, message)
+        self.logger.log(message, level)
         
     def create_pool(self):
         """创建数据库连接池"""

@@ -1,8 +1,19 @@
 from .connection import DatabaseConnection
 from .pool import ConnectionPool
+from .exceptions import DBError, DBConnectionError, DBQueryError, DBPoolError
 import configparser
 
-__all__ = ['DatabaseConnection', 'ConnectionPool', 'create_db_connection', 'create_connection_pool', 'get_db_config']
+__all__ = [
+    'DatabaseConnection', 
+    'ConnectionPool', 
+    'create_db_connection', 
+    'create_connection_pool', 
+    'get_db_config',
+    'DBError',
+    'DBConnectionError',
+    'DBQueryError',
+    'DBPoolError'
+]
 
 def get_db_config(config_path='config.ini'):
     """获取数据库配置"""

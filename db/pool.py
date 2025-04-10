@@ -1,10 +1,11 @@
 import mysql.connector
-from mysql.connector import Error
+from mysql.connector import Error as MySQLError
 import configparser
 from log_manager import LogManager
 import random
 import time
 from contextlib import contextmanager
+from .exceptions import DBConnectionError, DBQueryError, DBPoolError
 
 class ConnectionPool:
     """数据库连接池管理类"""
@@ -41,9 +42,9 @@ class ConnectionPool:
                     **self.connection_config
                 )
                 self.log(f"连接池创建成功，大小: {self.pool_size}")
-        except Error as e:
+        except MySQLError as e:
             self.log(f"创建连接池错误: {str(e)}", 'ERROR')
-            raise
+            raise DBPoolError(f"创建连接池错误: {str(e)}")
             
     def get_connection(self):
         """从连接池获取连接"""
@@ -54,9 +55,9 @@ class ConnectionPool:
             connection = self.pool.get_connection()
             self.log("从连接池获取连接成功")
             return connection
-        except Error as e:
+        except MySQLError as e:
             self.log(f"获取连接错误: {str(e)}", 'ERROR')
-            raise
+            raise DBConnectionError(f"获取连接错误: {str(e)}")
             
     @contextmanager
     def transaction(self):
@@ -70,7 +71,7 @@ class ConnectionPool:
             if connection:
                 connection.rollback()
             self.log(f"事务执行错误: {str(e)}", 'ERROR')
-            raise
+            raise DBQueryError(f"事务执行错误: {str(e)}")
         finally:
             if connection:
                 connection.close()

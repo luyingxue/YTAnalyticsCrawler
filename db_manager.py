@@ -1,10 +1,5 @@
-import mysql.connector
-from mysql.connector import Error
-import time
-from datetime import datetime
 from log_manager import LogManager
-import random
-from db import create_db_connection, create_connection_pool, get_db_config
+from db import create_db_connection, create_connection_pool, DBError
 
 class DBManager:
     """数据库管理类"""
@@ -52,7 +47,7 @@ class DBManager:
             self.log(f"已插入频道爬取数据: channel_id={data['channel_id']}")
             return True
             
-        except Error as e:
+        except DBError as e:
             self.log(f"插入频道爬取数据失败: {str(e)}", 'ERROR')
             return False
             
@@ -60,7 +55,7 @@ class DBManager:
         """获取未爬取的频道"""
         try:
             return self.connection_pool.get_uncrawled_channel()
-        except Error as e:
+        except DBError as e:
             self.log(f"获取未爬取频道时出错: {str(e)}", 'ERROR')
             return None
             
@@ -80,7 +75,7 @@ class DBManager:
             self.connection_pool.execute_query(query, video_data)
             return True
             
-        except Error as e:
+        except DBError as e:
             self.log(f"保存视频数据时出错: {str(e)}", 'ERROR')
             return False
             
@@ -100,7 +95,7 @@ class DBManager:
             self.connection_pool.execute_many(query, videos_data)
             return True
             
-        except Error as e:
+        except DBError as e:
             self.log(f"批量保存视频数据时出错: {str(e)}", 'ERROR')
             return False
             
@@ -128,7 +123,7 @@ class DBManager:
                 return result[0]['key_words']
             return None
             
-        except Error as e:
+        except DBError as e:
             self.log(f"获取未爬取关键词时出错: {str(e)}", 'ERROR')
             return None
             
@@ -143,6 +138,6 @@ class DBManager:
             self.connection_pool.execute_query(query, keyword_data)
             return True
             
-        except Error as e:
+        except DBError as e:
             self.log(f"保存关键词数据时出错: {str(e)}", 'ERROR')
             return False

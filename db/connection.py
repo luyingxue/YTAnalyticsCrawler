@@ -1,7 +1,8 @@
 import mysql.connector
-from mysql.connector import Error
+from mysql.connector import Error as MySQLError
 import configparser
 from log_manager import LogManager
+from .exceptions import DBConnectionError, DBQueryError
 
 class DatabaseConnection:
     """数据库连接管理类，处理与MySQL的连接"""
@@ -32,9 +33,9 @@ class DatabaseConnection:
             if self.connection is None or not self.connection.is_connected():
                 self.connection = mysql.connector.connect(**self.connection_config)
                 self.log("数据库连接成功")
-        except Error as e:
+        except MySQLError as e:
             self.log(f"数据库连接错误: {str(e)}", 'ERROR')
-            raise
+            raise DBConnectionError(f"数据库连接错误: {str(e)}")
             
     def disconnect(self):
         """关闭数据库连接"""
@@ -68,11 +69,11 @@ class DatabaseConnection:
             cursor.close()
             return result
             
-        except Error as e:
+        except MySQLError as e:
             self.log(f"执行查询错误: {str(e)}", 'ERROR')
             if self.connection:
                 self.connection.rollback()
-            raise
+            raise DBQueryError(f"执行查询错误: {str(e)}")
             
     def execute_many(self, query, params_list):
         """批量执行SQL语句"""
@@ -88,7 +89,8 @@ class DatabaseConnection:
             
             return affected_rows
             
-        except Error as e:
+        except MySQLError as e:
             self.log(f"批量执行错误: {str(e)}", 'ERROR')
             if self.connection:
-                self.connection.rollback() 
+                self.connection.rollback()
+            raise DBQueryError(f"批量执行错误: {str(e)}") 

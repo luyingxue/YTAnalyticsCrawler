@@ -5,126 +5,111 @@ import random
 class ChannelBaseModel(BaseModel):
     """频道基础信息模型类，处理channel_base表的操作"""
     
-    def get_uncrawled_channel(self):
-        """获取今天未爬取的频道，使用串行事务，带重试机制"""
-        max_retries = 3
-        retry_count = 0
-        
-        while retry_count < max_retries:
-            try:
-                with self.transaction() as connection:
-                    cursor = connection.cursor(dictionary=True)
-                    
-                    try:
-                        # 开始事务
-                        cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
-                        cursor.execute("START TRANSACTION")
-                        
-                        # 获取一条未爬取的频道
-                        query = """
-                            SELECT channel_id, is_benchmark, last_crawl_date
-                            FROM channel_base
-                            WHERE 
-                                (last_crawl_date IS NULL OR last_crawl_date != CURRENT_DATE)
-                                AND is_blacklist = 0
-                            ORDER BY 
-                                is_benchmark DESC,
-                                CASE 
-                                    WHEN last_crawl_date IS NULL THEN 1 
-                                    ELSE 0 
-                                END DESC,
-                                last_crawl_date ASC
-                            LIMIT 1
-                            FOR UPDATE
-                        """
-                        
-                        cursor.execute(query)
-                        result = cursor.fetchone()
-                        
-                        if result:
-                            # 立即更新last_crawl_date
-                            update_query = """
-                                UPDATE channel_base 
-                                SET last_crawl_date = CURRENT_DATE
-                                WHERE channel_id = %s
-                            """
-                            cursor.execute(update_query, (result['channel_id'],))
-                            
-                            # 构建URL
-                            result['url'] = f"https://www.youtube.com/channel/{result['channel_id']}/shorts"
-                            self.log(f"获取到未爬取频道: channel_id={result['channel_id']}, is_benchmark={result['is_benchmark']}, last_crawl={result['last_crawl_date']}")
-                            
-                            return result
-                        else:
-                            self.log("没有找到未爬取的频道")
-                            return None
-                            
-                    except Exception as e:
-                        raise
-                        
-            except Exception as e:
-                if "Deadlock found" in str(e):
-                    retry_count += 1
-                    self.log(f"发生死锁，正在重试 ({retry_count}/{max_retries})")
-                    time.sleep(random.uniform(0.1, 0.5))  # 随机延迟，避免同时重试
-                    continue
-                self.log(f"获取未爬取频道时出错: {str(e)}", 'ERROR')
-                raise
-                
-        self.log(f"达到最大重试次数 ({max_retries})，放弃获取")
-        return None
-        
-    def update_last_crawl_date(self, channel_id):
-        """更新频道的最后爬取日期"""
-        try:
-            query = """
-                UPDATE channel_base 
-                SET last_crawl_date = CURRENT_DATE
-                WHERE channel_id = %s
-            """
-            
-            self.execute_query(query, (channel_id,), fetch=False)
-            self.log(f"已更新频道最后爬取日期: channel_id={channel_id}")
-            return True
-            
-        except Exception as e:
-            self.log(f"更新频道最后爬取日期失败: {str(e)}", 'ERROR')
-            return False
-        
-    def delete_channel(self, channel_id):
-        """删除频道记录"""
-        try:
-            # 删除channel_base表中的记录
-            query = """
-                DELETE FROM channel_base
-                WHERE channel_id = %s
-            """
-            
-            self.execute_query(query, (channel_id,), fetch=False)
-            self.log(f"已删除频道记录: channel_id={channel_id}")
-            return True
-            
-        except Exception as e:
-            self.log(f"删除频道记录失败: {str(e)}", 'ERROR')
-            return False
-            
-    def add_channel(self, channel_info):
-        """添加新频道到基础表"""
+    def insert(self, data):
+        """插入单条记录"""
         try:
             query = """
                 INSERT INTO channel_base (
-                    channel_id, is_blacklist, is_benchmark, 
+                    channel_id, is_blacklist, is_benchmark, last_crawl_date,
                     blacklist_reason, benchmark_type
                 ) VALUES (
-                    %(channel_id)s, %(is_blacklist)s, %(is_benchmark)s,
+                    %(channel_id)s, %(is_blacklist)s, %(is_benchmark)s, %(last_crawl_date)s,
                     %(blacklist_reason)s, %(benchmark_type)s
                 )
             """
             
-            self.execute_query(query, channel_info, fetch=False)
-            self.log(f"已添加新频道: channel_id={channel_info.get('channel_id')}")
+            self.execute_query(query, data, fetch=False)
+            self.log(f"已插入频道基础数据: channel_id={data.get('channel_id')}")
             return True
             
         except Exception as e:
-            self.log(f"添加新频道失败: {str(e)}", 'ERROR')
-            return False 
+            self.log(f"插入频道基础数据失败: {str(e)}", 'ERROR')
+            return False
+            
+    def get_by_id(self, channel_id):
+        """根据channel_id获取单条记录"""
+        try:
+            query = """
+                SELECT 
+                    id, channel_id, is_blacklist, is_benchmark, last_crawl_date,
+                    blacklist_reason, benchmark_type
+                FROM channel_base
+                WHERE channel_id = %s
+            """
+            
+            result = self.execute_query(query, (channel_id,))
+            return result[0] if result else None
+            
+        except Exception as e:
+            self.log(f"获取频道基础数据失败: {str(e)}", 'ERROR')
+            return None
+            
+    def update(self, channel_id, data):
+        """更新记录"""
+        try:
+            # 构建更新字段
+            update_fields = []
+            params = []
+            for key, value in data.items():
+                update_fields.append(f"{key} = %s")
+                params.append(value)
+            params.append(channel_id)
+            
+            query = f"""
+                UPDATE channel_base 
+                SET {', '.join(update_fields)}
+                WHERE channel_id = %s
+            """
+            
+            self.execute_query(query, tuple(params), fetch=False)
+            self.log(f"已更新频道基础数据: channel_id={channel_id}")
+            return True
+            
+        except Exception as e:
+            self.log(f"更新频道基础数据失败: {str(e)}", 'ERROR')
+            return False
+            
+    def delete(self, channel_id):
+        """删除记录"""
+        try:
+            query = "DELETE FROM channel_base WHERE channel_id = %s"
+            self.execute_query(query, (channel_id,), fetch=False)
+            self.log(f"已删除频道基础数据: channel_id={channel_id}")
+            return True
+            
+        except Exception as e:
+            self.log(f"删除频道基础数据失败: {str(e)}", 'ERROR')
+            return False
+            
+    def get_by_condition(self, conditions, order_by=None, limit=None):
+        """根据条件查询记录"""
+        try:
+            query = """
+                SELECT 
+                    id, channel_id, is_blacklist, is_benchmark, last_crawl_date,
+                    blacklist_reason, benchmark_type
+                FROM channel_base
+                WHERE 1=1
+            """
+            params = []
+            
+            # 添加查询条件
+            for key, value in conditions.items():
+                if value is not None:
+                    query += f" AND {key} = %s"
+                    params.append(value)
+                    
+            # 添加排序
+            if order_by:
+                query += f" ORDER BY {order_by}"
+                
+            # 添加限制
+            if limit:
+                query += f" LIMIT {limit}"
+                
+            result = self.execute_query(query, tuple(params))
+            return result
+            
+        except Exception as e:
+            self.log(f"查询频道基础数据失败: {str(e)}", 'ERROR')
+            return []

@@ -14,7 +14,8 @@ class BaseModel:
         
     def log(self, message, level='INFO'):
         """输出日志"""
-        self.logger.log(message, level)
+        level_int = self.logger._get_level_int(level)
+        self.logger.log(message, level_int)
         
     def execute_query(self, query, params=None, fetch=True):
         """执行SQL查询"""

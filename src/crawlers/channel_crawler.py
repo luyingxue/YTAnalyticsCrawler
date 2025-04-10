@@ -7,7 +7,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, WebDriverException
 import time
 import json
-from src.utils import Utils
+from src.utils import ResponseProcessor, YouTubeParser
 from src.services import ChannelService
 from log_manager import LogManager
 import configparser
@@ -26,6 +26,8 @@ class ChannelCrawler:
         self.proxy = None
         self.driver = None
         self.logger = LogManager().get_logger('ChannelCrawler')
+        self.response_processor = ResponseProcessor()
+        self.youtube_parser = YouTubeParser()
         
     def log(self, message, level='INFO'):
         """输出日志"""
@@ -265,8 +267,8 @@ class ChannelCrawler:
                             response = entry['response']
                             if response['content'].get('text'):
                                 try:
-                                    # 使用Utils处理响应内容
-                                    response_text = Utils.process_response_content(response)
+                                    # 使用ResponseProcessor处理响应内容
+                                    response_text = self.response_processor.process_response_content(response)
                                     self.log(f"响应内容大小: {len(response_text)}")
                                     
                                     response_json = json.loads(response_text)
@@ -299,7 +301,7 @@ class ChannelCrawler:
                         self.log("成功获取API响应")
                         
                         # 解析频道信息
-                        channel_info = Utils.analyze_channel_json_response(response_json, page_channel_name)
+                        channel_info = self.youtube_parser.analyze_channel_json_response(api_response, page_channel_name)
                         if channel_info:
                             # 添加头像URL到频道信息中
                             if avatar_url:

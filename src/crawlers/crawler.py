@@ -3,7 +3,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
 import json
-from src.utils import Utils
+from src.utils import ResponseProcessor, FileHandler, YouTubeParser
 from src.services import VideoService
 import logging
 from log_manager import LogManager
@@ -23,6 +23,9 @@ class YoutubeCrawler:
         self.worker_id = worker_id
         self.logger = LogManager().get_logger(f'Crawler-{worker_id}' if worker_id else 'Crawler')
         self.video_service = VideoService()
+        self.response_processor = ResponseProcessor()
+        self.file_handler = FileHandler()
+        self.youtube_parser = YouTubeParser()
         
     def log(self, message, level='INFO'):
         """输出日志"""
@@ -166,7 +169,7 @@ class YoutubeCrawler:
                         
                         if content.get('text'):
                             # 处理响应内容
-                            response_text = Utils.process_response_content({
+                            response_text = self.response_processor.process_response_content({
                                 'content': content,
                                 'headers': response.get('headers', [])
                             })
@@ -176,14 +179,14 @@ class YoutubeCrawler:
                                 json_data = json.loads(response_text)
                                 
                                 # 保存原始JSON
-                                Utils.save_response_json(json_data, request_count, is_initial)
+                                self.file_handler.save_response_json(json_data, request_count, is_initial)
                                 
                                 # 分析并存储数据
                                 if is_initial:
-                                    Utils.analyze_and_store_json_response_first(json_data)
+                                    self.youtube_parser.analyze_and_store_json_response_first(json_data)
                                     is_initial = False
                                 else:
-                                    Utils.analyze_and_store_json_response_else(json_data)
+                                    self.youtube_parser.analyze_and_store_json_response_else(json_data)
                                     
                             except json.JSONDecodeError:
                                 self.log("JSON解析失败")

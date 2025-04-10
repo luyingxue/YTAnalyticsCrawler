@@ -3,7 +3,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
 import json
-from utils import Utils
+from src.utils import Utils
 from src.services import VideoService
 import logging
 from log_manager import LogManager

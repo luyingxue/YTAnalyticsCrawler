@@ -7,7 +7,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, WebDriverException
 import time
 import json
-from utils import Utils
+from src.utils import Utils
+from src.services import ChannelService
 from log_manager import LogManager
 import configparser
 import random

@@ -1,9 +1,15 @@
+import os
+import sys
+
+# 添加项目根目录到Python路径
+project_root = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, project_root)
+
 from multiprocessing import Process, Pool, cpu_count, Value
 import time
 import signal
-import sys
-from crawler import YoutubeCrawler
-from channel_crawler import ChannelCrawler
+from src.crawlers.crawler import YoutubeCrawler
+from src.crawlers.channel_crawler import ChannelCrawler
 from log_manager import LogManager
 import configparser
 import ctypes

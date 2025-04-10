@@ -193,41 +193,12 @@ class ChannelCrawler:
                             self.driver.save_screenshot(screenshot_path)
                             self.log(f"已保存页面截图到: {screenshot_path}")
                             
-                            # 从URL中提取channel_id并删除数据库中的记录
-                            try:
-                                # 从URL中提取channel_id
-                                channel_id = url.split('/')[-1]
-                                if channel_id:
-                                    self.log(f"正在删除不存在的频道记录: {channel_id}")
-                                    db_manager = DBManager()
-                                    deleted = db_manager.delete_channel(channel_id)
-                                    if deleted:
-                                        self.log(f"成功删除不存在的频道记录: {channel_id}")
-                                    else:
-                                        self.log(f"删除不存在的频道记录失败: {channel_id}")
-                            except Exception as delete_err:
-                                self.log(f"删除不存在频道记录时出错: {str(delete_err)}", 'ERROR')
-                            
+                            # 频道不存在，返回None
+                            self.log("频道不存在，终止处理")
                             return None
                     except Exception as e:
                         self.log(f"获取页面channel_name失败: {str(e)}")
                         self.log("频道不存在，终止处理")
-                        
-                        # 从URL中提取channel_id并删除数据库中的记录
-                        try:
-                            # 从URL中提取channel_id
-                            channel_id = url.split('/')[-1]
-                            if channel_id:
-                                self.log(f"正在删除不存在的频道记录: {channel_id}")
-                                db_manager = DBManager()
-                                deleted = db_manager.delete_channel(channel_id)
-                                if deleted:
-                                    self.log(f"成功删除不存在的频道记录: {channel_id}")
-                                else:
-                                    self.log(f"删除不存在的频道记录失败: {channel_id}")
-                        except Exception as delete_err:
-                            self.log(f"删除不存在频道记录时出错: {str(delete_err)}", 'ERROR')
-                            
                         return None
                     
                     # 获取频道头像URL

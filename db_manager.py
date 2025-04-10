@@ -19,30 +19,6 @@ class DBManager:
         """输出日志"""
         LogManager.log(level, message)
         
-    def save_channel_data(self, channel_data):
-        """保存频道数据到数据库"""
-        try:
-            # 保存到channel_crawl表
-            query = """
-                INSERT INTO channel_crawl (
-                    channel_id, channel_name, description, canonical_base_url,
-                    avatar_url, subscriber_count, video_count, view_count,
-                    joined_date, country, crawl_date
-                ) VALUES (
-                    %(channel_id)s, %(channel_name)s, %(description)s, %(canonical_base_url)s,
-                    %(avatar_url)s, %(subscriber_count)s, %(video_count)s, %(view_count)s,
-                    %(joined_date)s, %(country)s, CURRENT_DATE
-                )
-            """
-            
-            self.connection_pool.execute_query(query, channel_data)
-            self.log(f"已插入频道爬取数据: channel_id={channel_data['channel_id']}")
-            return True
-            
-        except Error as e:
-            self.log(f"保存频道数据时出错: {str(e)}", 'ERROR')
-            return False
-            
     def insert_channel_crawl(self, channel_info):
         """插入频道爬取数据"""
         try:

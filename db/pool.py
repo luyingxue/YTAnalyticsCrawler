@@ -5,24 +5,28 @@ from log_manager import LogManager
 import random
 import time
 from contextlib import contextmanager
+from .base import DBBase
 from .exceptions import DBConnectionError, DBQueryError, DBPoolError
 
-class ConnectionPool:
-    """数据库连接池管理类"""
+class ConnectionPool(DBBase):
+    """数据库连接管理类
     
-    def __init__(self, config_path='config.ini', pool_size=5, pool_name="mypool"):
-        """初始化连接池"""
-        # 读取配置文件
-        config = configparser.ConfigParser()
-        config.read(config_path)
+    提供数据库连接池功能，支持：
+    - 连接池管理
+    - 事务支持
+    - 查询执行
+    - 批量操作
+    """
+    
+    def __init__(self, config, pool_size=5, pool_name="mypool"):
+        """初始化数据库连接池
         
-        self.connection_config = {
-            'host': config['database']['host'],
-            'database': config['database']['database'],
-            'user': config['database']['user'],
-            'password': config['database']['password']
-        }
-        
+        Args:
+            config (dict): 数据库配置信息
+            pool_size (int): 连接池大小，默认5
+            pool_name (str): 连接池名称，默认"mypool"
+        """
+        super().__init__(config)
         self.pool_size = pool_size
         self.pool_name = pool_name
         self.pool = None
@@ -33,21 +37,23 @@ class ConnectionPool:
         LogManager.log(level, message)
         
     def create_pool(self):
-        """创建连接池"""
+        """创建数据库连接池"""
         try:
             if self.pool is None:
                 self.pool = mysql.connector.pooling.MySQLConnectionPool(
                     pool_name=self.pool_name,
                     pool_size=self.pool_size,
-                    **self.connection_config
+                    **self.config
                 )
-                self.log(f"连接池创建成功，大小: {self.pool_size}")
+                self.log(f"首次创建连接池成功，大小: {self.pool_size}")
+            else:
+                self.log("复用已存在的连接池")
         except MySQLError as e:
             self.log(f"创建连接池错误: {str(e)}", 'ERROR')
             raise DBPoolError(f"创建连接池错误: {str(e)}")
             
     def get_connection(self):
-        """从连接池获取连接"""
+        """从连接池获取数据库连接"""
         if self.pool is None:
             self.create_pool()
             
@@ -61,7 +67,13 @@ class ConnectionPool:
             
     @contextmanager
     def transaction(self):
-        """事务上下文管理器"""
+        """事务上下文管理器
+        
+        用法:
+            with pool.transaction() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM table")
+        """
         connection = None
         try:
             connection = self.get_connection()
@@ -74,10 +86,19 @@ class ConnectionPool:
             raise DBQueryError(f"事务执行错误: {str(e)}")
         finally:
             if connection:
-                connection.close()
+                self.close_connection(connection)
                 
     def execute_query(self, query, params=None, fetch=True):
-        """执行SQL查询"""
+        """执行SQL查询
+        
+        Args:
+            query (str): SQL查询语句
+            params (tuple/dict): 查询参数
+            fetch (bool): 是否获取结果
+            
+        Returns:
+            查询结果或影响行数
+        """
         with self.transaction() as connection:
             cursor = connection.cursor(dictionary=True)
             
@@ -95,7 +116,15 @@ class ConnectionPool:
             return result
             
     def execute_many(self, query, params_list):
-        """批量执行SQL语句"""
+        """批量执行SQL语句
+        
+        Args:
+            query (str): SQL语句
+            params_list (list): 参数列表
+            
+        Returns:
+            影响的行数
+        """
         with self.transaction() as connection:
             cursor = connection.cursor()
             
@@ -103,73 +132,4 @@ class ConnectionPool:
             affected_rows = cursor.rowcount
             
             cursor.close()
-            return affected_rows
-            
-    def get_uncrawled_channel(self):
-        """获取今天未爬取的频道，使用串行事务，带重试机制"""
-        max_retries = 3
-        retry_count = 0
-        
-        while retry_count < max_retries:
-            try:
-                with self.transaction() as connection:
-                    cursor = connection.cursor(dictionary=True)
-                    
-                    try:
-                        # 开始事务
-                        cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
-                        cursor.execute("START TRANSACTION")
-                        
-                        # 获取一条未爬取的频道
-                        query = """
-                            SELECT channel_id, is_benchmark, last_crawl_date
-                            FROM channel_base
-                            WHERE 
-                                (last_crawl_date IS NULL OR last_crawl_date != CURRENT_DATE)
-                                AND is_blacklist = 0
-                            ORDER BY 
-                                is_benchmark DESC,
-                                CASE 
-                                    WHEN last_crawl_date IS NULL THEN 1 
-                                    ELSE 0 
-                                END DESC,
-                                last_crawl_date ASC
-                            LIMIT 1
-                            FOR UPDATE
-                        """
-                        
-                        cursor.execute(query)
-                        result = cursor.fetchone()
-                        
-                        if result:
-                            # 立即更新last_crawl_date
-                            update_query = """
-                                UPDATE channel_base 
-                                SET last_crawl_date = CURRENT_DATE
-                                WHERE channel_id = %s
-                            """
-                            cursor.execute(update_query, (result['channel_id'],))
-                            
-                            # 构建URL
-                            result['url'] = f"https://www.youtube.com/channel/{result['channel_id']}/shorts"
-                            self.log(f"获取到未爬取频道: channel_id={result['channel_id']}, is_benchmark={result['is_benchmark']}, last_crawl={result['last_crawl_date']}")
-                            
-                            return result
-                        else:
-                            self.log("没有找到未爬取的频道")
-                            return None
-                            
-                    except Error as e:
-                        raise
-                        
-            except Error as e:
-                if "Deadlock found" in str(e):
-                    retry_count += 1
-                    self.log(f"发生死锁，正在重试 ({retry_count}/{max_retries})")
-                    time.sleep(random.uniform(0.1, 0.5))  # 随机延迟，避免同时重试
-                    continue
-                self.log(f"获取未爬取频道时出错: {str(e)}", 'ERROR')
-                raise
-                
-        self.log(f"达到最大重试次数 ({max_retries})，放弃获取")
-        return None 
+            return affected_rows 

@@ -1,13 +1,14 @@
 from log_manager import LogManager
-from db import create_db_connection, create_connection_pool, DBError
+from db import create_connection_pool, DBError
+import time
+import random
 
 class DBManager:
     """数据库管理类"""
     
     def __init__(self):
         """初始化数据库管理器"""
-        self.db_connection = create_db_connection()
-        self.connection_pool = create_connection_pool(pool_size=5)
+        self.connection_pool = create_connection_pool()
         self.logger = LogManager().get_logger('DBManager')
         
     def log(self, message, level='INFO'):
@@ -52,12 +53,73 @@ class DBManager:
             return False
             
     def get_uncrawled_channel(self):
-        """获取未爬取的频道"""
-        try:
-            return self.connection_pool.get_uncrawled_channel()
-        except DBError as e:
-            self.log(f"获取未爬取频道时出错: {str(e)}", 'ERROR')
-            return None
+        """获取今天未爬取的频道，使用串行事务，带重试机制"""
+        max_retries = 3
+        retry_count = 0
+        
+        while retry_count < max_retries:
+            try:
+                with self.connection_pool.transaction() as connection:
+                    cursor = connection.cursor(dictionary=True)
+                    
+                    try:
+                        # 开始事务
+                        cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+                        cursor.execute("START TRANSACTION")
+                        
+                        # 获取一条未爬取的频道
+                        query = """
+                            SELECT channel_id, is_benchmark, last_crawl_date
+                            FROM channel_base
+                            WHERE 
+                                (last_crawl_date IS NULL OR last_crawl_date != CURRENT_DATE)
+                                AND is_blacklist = 0
+                            ORDER BY 
+                                is_benchmark DESC,
+                                CASE 
+                                    WHEN last_crawl_date IS NULL THEN 1 
+                                    ELSE 0 
+                                END DESC,
+                                last_crawl_date ASC
+                            LIMIT 1
+                            FOR UPDATE
+                        """
+                        
+                        cursor.execute(query)
+                        result = cursor.fetchone()
+                        
+                        if result:
+                            # 立即更新last_crawl_date
+                            update_query = """
+                                UPDATE channel_base 
+                                SET last_crawl_date = CURRENT_DATE
+                                WHERE channel_id = %s
+                            """
+                            cursor.execute(update_query, (result['channel_id'],))
+                            
+                            # 构建URL
+                            result['url'] = f"https://www.youtube.com/channel/{result['channel_id']}/shorts"
+                            self.log(f"获取到未爬取频道: channel_id={result['channel_id']}, is_benchmark={result['is_benchmark']}, last_crawl={result['last_crawl_date']}")
+                            
+                            return result
+                        else:
+                            self.log("没有找到未爬取的频道")
+                            return None
+                            
+                    except Exception as e:
+                        raise
+                        
+            except Exception as e:
+                if "Deadlock found" in str(e):
+                    retry_count += 1
+                    self.log(f"发生死锁，正在重试 ({retry_count}/{max_retries})")
+                    time.sleep(random.uniform(0.1, 0.5))  # 随机延迟，避免同时重试
+                    continue
+                self.log(f"获取未爬取频道时出错: {str(e)}", 'ERROR')
+                raise
+                
+        self.log(f"达到最大重试次数 ({max_retries})，放弃获取")
+        return None
             
     def save_video_data(self, video_data):
         """保存视频数据到数据库"""

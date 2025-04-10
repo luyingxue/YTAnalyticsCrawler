@@ -4,7 +4,7 @@ from selenium.webdriver.chrome.options import Options
 import time
 import json
 from utils import Utils
-from db_manager import DBManager
+from src.services import VideoService
 import logging
 from log_manager import LogManager
 
@@ -21,190 +21,180 @@ class YoutubeCrawler:
         self.proxy = None
         self.driver = None
         self.worker_id = worker_id
-        self.logger = LogManager().get_logger()
+        self.logger = LogManager().get_logger(f'Crawler-{worker_id}' if worker_id else 'Crawler')
+        self.video_service = VideoService()
         
     def log(self, message, level='INFO'):
         """输出日志"""
-        LogManager.log(level, message, self.worker_id)
-
+        LogManager.log(level, message)
+        
     def setup(self):
-        """设置代理和浏览器"""
+        """设置爬虫环境"""
         try:
-            self.log("启动代理服务器...")
-            
-            # 修改端口分配逻辑
-            base_port = 8080
-            worker_id = int(str(self.worker_id).replace('Worker ', ''))
-            
-            # 尝试不同的端口
-            max_port_attempts = 5
-            for port_offset in range(max_port_attempts):
-                try:
-                    port = base_port + worker_id + (port_offset * 100)  # 使用更大的间隔
-                    self.log(f"尝试使用端口: {port}")
-                    
-                    self.server = Server(self.proxy_path, {'port': port})
-                    self.server.start()
-                    self.log("代理服务器启动成功")
-                    
-                    self.proxy = self.server.create_proxy()
-                    self.log(f"创建代理成功，地址: {self.proxy.proxy}")
-                    break
-                    
-                except Exception as e:
-                    if port_offset == max_port_attempts - 1:  # 最后一次尝试
-                        raise
-                    self.log(f"端口 {port} 启动失败: {str(e)}, 尝试下一个端口")
-                    if self.server:
-                        try:
-                            self.server.stop()
-                        except:
-                            pass
-                    time.sleep(1)
+            # 启动BrowserMob代理
+            self.server = Server(self.proxy_path)
+            self.server.start()
+            self.proxy = self.server.create_proxy()
+            self.proxy.new_har("youtube")
             
             # 配置Chrome选项
             chrome_options = Options()
-            chrome_options.add_argument(f'--proxy-server={self.proxy.proxy}')
+            chrome_options.add_argument('--proxy-server={0}'.format(self.proxy.proxy))
+            chrome_options.add_argument('--no-sandbox')
+            chrome_options.add_argument('--disable-dev-shm-usage')
+            chrome_options.add_argument('--disable-gpu')
+            chrome_options.add_argument('--disable-extensions')
+            chrome_options.add_argument('--disable-infobars')
+            chrome_options.add_argument('--disable-notifications')
+            chrome_options.add_argument('--disable-popup-blocking')
+            chrome_options.add_argument('--disable-web-security')
             chrome_options.add_argument('--ignore-certificate-errors')
             chrome_options.add_argument('--ignore-ssl-errors')
-            chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
-            chrome_options.set_capability('acceptInsecureCerts', True)
+            chrome_options.add_argument('--lang=zh-CN')
+            chrome_options.add_argument('--start-maximized')
+            chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
             
-            self.log("初始化Chrome浏览器...")
+            # 启动Chrome浏览器
             self.driver = webdriver.Chrome(options=chrome_options)
-            self.log("Chrome浏览器初始化成功")
+            self.driver.set_page_load_timeout(30)
             
-            # 开始记录网络流量
-            self.proxy.new_har("youtube", options={
-                'captureHeaders': True,
-                'captureContent': True,
-                'captureBinaryContent': True,
-                'captureEncoding': True,
-                'captureMimeTypes': ['text/plain', 'application/json', 'application/javascript', 'text/html'],
-                'captureCompression': True
-            })
+            self.log("爬虫环境设置完成")
+            return True
             
         except Exception as e:
-            self.log(f"设置代理和浏览器时出错: {str(e)}", 'ERROR')
+            self.log(f"设置爬虫环境时出错: {str(e)}", 'ERROR')
             self.cleanup()
-            raise
+            return False
             
     def cleanup(self):
-        """清理资源"""
-        if self.driver:
-            self.driver.quit()
-            self.log("浏览器已关闭")
-        if self.server:
-            self.server.stop()
-            self.log("代理服务器已停止")
-            
-    def process_url(self, url_data):
-        """处理单个URL的爬取任务"""
+        """清理爬虫资源"""
         try:
-            target_url = url_data['url']
-            self.log(f"处理URL: {target_url} (关键词: {url_data['key_words']})")
-            
-            # 访问页面
-            self.driver.get(target_url)
-            time.sleep(3)
-            
-            # 点击Shorts按钮
-            self._click_shorts_button()
-            
-            # 执行滚动和分析
-            self.log("开始执行滚动和分析...")
-            self._scroll_and_analyze()
+            if self.driver:
+                self.driver.quit()
+                self.driver = None
+                
+            if self.proxy:
+                self.proxy.close()
+                self.proxy = None
+                
+            if self.server:
+                self.server.stop()
+                self.server = None
+                
+            self.log("爬虫资源已清理")
             
         except Exception as e:
-            self.log(f"处理URL时出错: {str(e)}")
-            raise
+            self.log(f"清理爬虫资源时出错: {str(e)}", 'ERROR')
+            
+    def process_url(self, url_data):
+        """
+        处理URL
+        Args:
+            url_data: URL数据，包含url和is_benchmark字段
+        Returns:
+            bool: 处理是否成功
+        """
+        try:
+            url = url_data.get('url', '')
+            is_benchmark = url_data.get('is_benchmark', False)
+            
+            if not url:
+                self.log("URL为空，跳过处理")
+                return False
+                
+            self.log(f"开始处理URL: {url}, is_benchmark={is_benchmark}")
+            
+            # 访问URL
+            self.driver.get(url)
+            time.sleep(5)  # 等待页面加载
+            
+            # 点击Shorts按钮
+            if not self._click_shorts_button():
+                self.log("点击Shorts按钮失败")
+                return False
+                
+            # 滚动并分析
+            return self._scroll_and_analyze()
+            
+        except Exception as e:
+            self.log(f"处理URL时出错: {str(e)}", 'ERROR')
+            return False
             
     def _click_shorts_button(self):
         """点击Shorts按钮"""
         try:
-            shorts_button = self.driver.find_element("xpath", 
-                "/html/body/ytd-app/div[1]/ytd-page-manager/ytd-search/div[1]/div/ytd-search-header-renderer/div[1]/yt-chip-cloud-renderer/div/div[2]/iron-selector/yt-chip-cloud-chip-renderer[2]/yt-formatted-string")
+            # 等待Shorts按钮出现
+            time.sleep(3)
             
-            if shorts_button.text == "Shorts":
-                shorts_button.click()
-                self.log("已点击 Shorts 按钮")
-                time.sleep(3)
-            else:
-                self.log(f"按钮文字不匹配，期望 'Shorts'，实际是 '{shorts_button.text}'")
+            # 尝试点击Shorts按钮
+            shorts_button = self.driver.find_element_by_xpath("//a[contains(@href, '/shorts')]")
+            shorts_button.click()
+            time.sleep(3)
+            
+            self.log("已点击Shorts按钮")
+            return True
+            
         except Exception as e:
-            self.log(f"点击 Shorts 按钮时出错: {str(e)}")
+            self.log(f"点击Shorts按钮时出错: {str(e)}", 'ERROR')
+            return False
             
     def _scroll_and_analyze(self):
-        """执行滚动和分析，直到无法继续滚动"""
-        processed_entries = set()
-        request_count = 0
-        last_height = self.driver.execute_script("return document.documentElement.scrollHeight")
-        self.log(f"初始页面高度: {last_height}")
-        
-        # 定义需要捕获的请求URL模式
-        target_url = 'www.youtube.com/youtubei/v1/search'
-        self.log("检测到搜索结果页面，将捕获搜索API请求")
-        
-        scroll_count = 0
-        no_change_count = 0  # 添加计数器跟踪页面高度未变化的次数
-        
-        while True:  # 移除max_scrolls限制
-            try:
-                self.driver.execute_script("window.scrollTo(0, document.documentElement.scrollHeight);")
-                self.log(f"\n执行第 {scroll_count + 1} 次滚动")
+        """滚动页面并分析数据"""
+        try:
+            # 初始化变量
+            scroll_count = 0
+            max_scrolls = 10
+            request_count = 0
+            is_initial = True
+            
+            while scroll_count < max_scrolls:
+                # 滚动到底部
+                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 time.sleep(2)
                 
-                # 处理网络请求
-                for entry in self.proxy.har['log']['entries']:
-                    request_url = entry['request']['url']
-                    entry_id = f"{request_url}_{entry['startedDateTime']}"
-                    
-                    if entry_id not in processed_entries and target_url in request_url:
+                # 获取网络请求
+                entries = self.proxy.har['log']['entries']
+                
+                # 分析请求
+                for entry in entries:
+                    if 'youtube.com/youtubei/v1/browse' in entry['request']['url']:
                         request_count += 1
-                        self.log(f"\n=== API Request #{request_count} ===")
-                        self.log(f"URL: {request_url}")
-                        self.log(f"Method: {entry['request']['method']}")
-                        self.log(f"Time: {time.strftime('%H:%M:%S')}")
                         
                         # 获取响应内容
                         response = entry['response']
-                        if response['content'].get('text'):
-                            try:
-                                response_text = Utils.process_response_content(response)
-                                response_json = json.loads(response_text)
-                                
-                                # 处理响应数据
-                                if request_count == 1:
-                                    Utils.analyze_and_store_json_response_first(response_json)
-                                else:
-                                    Utils.analyze_and_store_json_response_else(response_json)
-                                    
-                            except json.JSONDecodeError as e:
-                                self.log(f"JSON解析错误: {str(e)}", 'ERROR')
-                            except Exception as e:
-                                self.log(f"处理API响应时出错: {str(e)}", 'ERROR')
-                        else:
-                            self.log("No response content available")
+                        content = response.get('content', {})
+                        
+                        if content.get('text'):
+                            # 处理响应内容
+                            response_text = Utils.process_response_content({
+                                'content': content,
+                                'headers': response.get('headers', [])
+                            })
                             
-                        processed_entries.add(entry_id)
-                
-                new_height = self.driver.execute_script("return document.documentElement.scrollHeight")
-                if new_height == last_height:
-                    no_change_count += 1
-                    self.log(f"页面高度未变化，计数: {no_change_count}")
-                    if no_change_count >= 3:  # 连续3次高度未变化则认为到达底部
-                        self.log("已到达页面底部")
-                        break
-                else:
-                    no_change_count = 0  # 高度有变化，重置计数器
-                    
-                last_height = new_height
+                            # 解析JSON
+                            try:
+                                json_data = json.loads(response_text)
+                                
+                                # 保存原始JSON
+                                Utils.save_response_json(json_data, request_count, is_initial)
+                                
+                                # 分析并存储数据
+                                if is_initial:
+                                    Utils.analyze_and_store_json_response_first(json_data)
+                                    is_initial = False
+                                else:
+                                    Utils.analyze_and_store_json_response_else(json_data)
+                                    
+                            except json.JSONDecodeError:
+                                self.log("JSON解析失败")
+                                
+                # 增加滚动计数
                 scroll_count += 1
-                self.log(f"页面已滚动 {scroll_count} 次，当前高度: {new_height}")
+                self.log(f"已完成第 {scroll_count} 次滚动")
                 
-            except Exception as e:
-                self.log(f"滚动过程中出错: {str(e)}", 'ERROR')
-                break
-        
-        self.log(f"完成滚动，共执行 {scroll_count} 次")
-        self.log(f"总共找到 {request_count} 个API请求")
+            self.log(f"滚动完成，共处理 {request_count} 个请求")
+            return True
+            
+        except Exception as e:
+            self.log(f"滚动并分析数据时出错: {str(e)}", 'ERROR')
+            return False

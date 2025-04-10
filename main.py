@@ -4,10 +4,10 @@ import signal
 import sys
 from crawler import YoutubeCrawler
 from channel_crawler import ChannelCrawler
-from db_manager import DBManager
 from log_manager import LogManager
 import configparser
 import ctypes
+from src.services import ChannelService, VideoService, KeywordService
 
 # 使用多进程共享变量
 should_exit = Value(ctypes.c_bool, False)
@@ -32,11 +32,13 @@ def channel_worker(worker_id=None):
         crawler = ChannelCrawler(worker_id=worker_id)
         crawler.setup()
         
+        # 直接使用ChannelService
+        channel_service = ChannelService()
+        
         while not should_exit.value:
             try:
                 # 获取未爬取的频道
-                db = DBManager()
-                channel = db.get_uncrawled_channel()
+                channel = channel_service.get_uncrawled_channel()
                 
                 if not channel:
                     logger.info(f"[进程 {worker_id}] 所有频道今天都已经爬取过，等待5分钟后继续...")
@@ -56,9 +58,8 @@ def channel_worker(worker_id=None):
                     # 确保channel_id正确
                     channel_info['channel_id'] = channel['channel_id']
                     # 保存到数据库
-                    db = DBManager()
                     try:
-                        db.insert_channel_crawl(channel_info)
+                        channel_service.insert_channel_crawl(channel_info)
                         logger.info(f"[进程 {worker_id}] 成功保存频道数据: {channel['channel_id']}")
                     except Exception as e:
                         if "Duplicate entry" not in str(e):
@@ -70,8 +71,7 @@ def channel_worker(worker_id=None):
                     # 删除不存在的频道记录
                     try:
                         logger.info(f"[进程 {worker_id}] 正在删除不存在的频道记录: {channel['channel_id']}")
-                        db = DBManager()
-                        deleted = db.delete_channel(channel['channel_id'])
+                        deleted = channel_service.delete_channel(channel['channel_id'])
                         if deleted:
                             logger.info(f"[进程 {worker_id}] 成功删除不存在的频道记录: {channel['channel_id']}")
                         else:

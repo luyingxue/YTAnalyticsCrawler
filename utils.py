@@ -3,7 +3,7 @@ import brotli
 import re
 import json
 import time
-from db_manager import DBManager
+from src.services import VideoService
 from log_manager import LogManager
 import traceback
 
@@ -165,8 +165,9 @@ class Utils:
             results.append(video_data)
         
         if results:
-            db = DBManager()
-            db.batch_insert_videos(results)
+            # 使用VideoService替代DBManager
+            video_service = VideoService()
+            video_service.save_videos_batch(results)
         
         Utils.log(f"\n总共解析了 {len(results)} 个视频的数据")
         return results
@@ -209,8 +210,9 @@ class Utils:
                 continue
         
         if results:
-            db = DBManager()
-            db.batch_insert_videos(results)
+            # 使用VideoService替代DBManager
+            video_service = VideoService()
+            video_service.save_videos_batch(results)
         
         Utils.log(f"\n总共解析了 {len(results)} 个视频的数据")
         return results

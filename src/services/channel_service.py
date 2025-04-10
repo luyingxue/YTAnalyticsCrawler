@@ -20,4 +20,9 @@ class ChannelService:
         
     def get_uncrawled_channel(self):
         """获取今天未爬取的频道"""
-        return self.model.get_uncrawled_channel() 
+        return self.model.get_uncrawled_channel()
+        
+    def delete_channel(self, channel_id):
+        """删除频道记录"""
+        # 这里可以添加数据验证、转换等业务逻辑
+        return self.model.delete_channel(channel_id) 

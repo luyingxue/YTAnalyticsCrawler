@@ -8,7 +8,6 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 import time
 import json
 from utils import Utils
-from db_manager import DBManager
 from log_manager import LogManager
 import configparser
 import random

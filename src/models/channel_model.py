@@ -109,4 +109,21 @@ class ChannelModel(BaseModel):
                 raise
                 
         self.log(f"达到最大重试次数 ({max_retries})，放弃获取")
-        return None 
+        return None
+        
+    def delete_channel(self, channel_id):
+        """删除频道记录"""
+        try:
+            # 删除channel_base表中的记录
+            query = """
+                DELETE FROM channel_base
+                WHERE channel_id = %s
+            """
+            
+            self.execute_query(query, (channel_id,), fetch=False)
+            self.log(f"已删除频道记录: channel_id={channel_id}")
+            return True
+            
+        except Exception as e:
+            self.log(f"删除频道记录失败: {str(e)}", 'ERROR')
+            return False 

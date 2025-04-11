@@ -11,10 +11,12 @@ class ChannelBaseModel(BaseModel):
             query = """
                 INSERT INTO channel_base (
                     channel_id, is_blacklist, is_benchmark, last_crawl_date,
-                    blacklist_reason, benchmark_type
+                    blacklist_reason, benchmark_type, channel_name, description,
+                    canonical_base_url, avatar_url, joined_date, country
                 ) VALUES (
                     %(channel_id)s, %(is_blacklist)s, %(is_benchmark)s, %(last_crawl_date)s,
-                    %(blacklist_reason)s, %(benchmark_type)s
+                    %(blacklist_reason)s, %(benchmark_type)s, %(channel_name)s, %(description)s,
+                    %(canonical_base_url)s, %(avatar_url)s, %(joined_date)s, %(country)s
                 )
             """
             
@@ -32,7 +34,8 @@ class ChannelBaseModel(BaseModel):
             query = """
                 SELECT 
                     id, channel_id, is_blacklist, is_benchmark, last_crawl_date,
-                    blacklist_reason, benchmark_type
+                    blacklist_reason, benchmark_type, channel_name, description,
+                    canonical_base_url, avatar_url, joined_date, country
                 FROM channel_base
                 WHERE channel_id = %s
             """
@@ -87,7 +90,8 @@ class ChannelBaseModel(BaseModel):
             query = """
                 SELECT 
                     id, channel_id, is_blacklist, is_benchmark, last_crawl_date,
-                    blacklist_reason, benchmark_type
+                    blacklist_reason, benchmark_type, channel_name, description,
+                    canonical_base_url, avatar_url, joined_date, country
                 FROM channel_base
                 WHERE 1=1
             """

@@ -27,8 +27,46 @@ class ChannelService:
         # 数据转换
         processed_data = self._process_channel_data(channel_info)
         
-        # 调用模型层方法
-        return self.crawl_model.insert(processed_data)
+        # 打印处理后的数据
+        self.log(f"处理后的频道数据: {processed_data}")
+        
+        # 分解数据为两部分
+        channel_id = processed_data.get('channel_id')
+        
+        # 1. 更新channel_base表
+        base_data = {
+            'channel_name': processed_data.get('channel_name'),
+            'description': processed_data.get('description'),
+            'canonical_base_url': processed_data.get('canonical_base_url'),
+            'avatar_url': processed_data.get('avatar_url'),
+            'joined_date': processed_data.get('joined_date'),
+            'country': processed_data.get('country'),
+            'last_crawl_date': datetime.now().date()
+        }
+        
+        # 移除None值
+        base_data = {k: v for k, v in base_data.items() if v is not None}
+        
+        # 更新channel_base表
+        if base_data:
+            update_result = self.base_model.update(channel_id, base_data)
+            if not update_result:
+                self.log(f"更新频道基础数据失败: channel_id={channel_id}", 'ERROR')
+                return False
+        
+        # 2. 插入channel_crawl表
+        crawl_data = {
+            'channel_id': channel_id,
+            'subscriber_count': processed_data.get('subscriber_count'),
+            'video_count': processed_data.get('video_count'),
+            'view_count': processed_data.get('view_count')
+        }
+        
+        # 移除None值
+        crawl_data = {k: v for k, v in crawl_data.items() if v is not None}
+        
+        # 调用模型层方法插入爬取数据
+        return self.crawl_model.insert(crawl_data)
         
     def _validate_channel_info(self, channel_info):
         """验证频道信息"""

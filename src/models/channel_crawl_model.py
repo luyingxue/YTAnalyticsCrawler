@@ -8,13 +8,9 @@ class ChannelCrawlModel(BaseModel):
         try:
             query = """
                 INSERT INTO channel_crawl (
-                    channel_id, channel_name, description,
-                    subscriber_count, video_count, view_count,
-                    joined_date, country, crawl_date, canonical_base_url, avatar_url
+                    channel_id, subscriber_count, video_count, view_count, crawl_date
                 ) VALUES (
-                    %(channel_id)s, %(channel_name)s, %(description)s,
-                    %(subscriber_count)s, %(video_count)s, %(view_count)s,
-                    %(joined_date)s, %(country)s, CURRENT_DATE, %(canonical_base_url)s, %(avatar_url)s
+                    %(channel_id)s, %(subscriber_count)s, %(video_count)s, %(view_count)s, CURRENT_DATE
                 )
             """
             
@@ -31,10 +27,7 @@ class ChannelCrawlModel(BaseModel):
         try:
             query = """
                 SELECT 
-                    channel_id, channel_name, description,
-                    subscriber_count, video_count, view_count,
-                    joined_date, country, crawl_date, canonical_base_url, avatar_url,
-                    avg_view_count, avg_subscriber_increase, daily_view_increase
+                    channel_id, subscriber_count, video_count, view_count, crawl_date
                 FROM channel_crawl
                 WHERE channel_id = %s
             """
@@ -88,10 +81,7 @@ class ChannelCrawlModel(BaseModel):
         try:
             query = """
                 SELECT 
-                    channel_id, channel_name, description,
-                    subscriber_count, video_count, view_count,
-                    joined_date, country, crawl_date, canonical_base_url, avatar_url,
-                    avg_view_count, avg_subscriber_increase, daily_view_increase
+                    channel_id, subscriber_count, video_count, view_count, crawl_date
                 FROM channel_crawl
                 WHERE 1=1
             """

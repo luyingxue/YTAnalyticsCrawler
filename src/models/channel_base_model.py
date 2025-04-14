@@ -44,7 +44,7 @@ class ChannelBaseModel(BaseModel):
     def delete(self, channel_id: str) -> bool:
         """删除记录"""
         try:
-            self.db.delete(self.table_name, channel_id)
+            result = self.db.client.table(self.table_name).delete().eq('channel_id', channel_id).execute()
             self.log(f"已删除频道基础数据: channel_id={channel_id}")
             return True
         except Exception as e:

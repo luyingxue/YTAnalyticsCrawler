@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from .channel_service import ChannelService
+from src.services.channel_service import ChannelService
 
 def test_get_uncrawled_channel():
     """测试获取未爬取频道的功能"""
@@ -114,12 +114,40 @@ def test_validate_channel_info():
         import traceback
         print(f"错误详情:\n{traceback.format_exc()}")
 
+def test_delete_channel():
+    """测试删除频道功能"""
+    try:
+        # 创建服务实例
+        channel_service = ChannelService()
+        
+        print(f"开始测试删除频道 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        # 要删除的频道ID
+        channel_id = 'UC_1toTQt6h3Tc1a_F6AE01A'
+        
+        # 调用删除方法
+        result = channel_service.delete_channel(channel_id)
+        
+        # 打印结果
+        if result:
+            print(f"\n成功删除频道: {channel_id}")
+        else:
+            print(f"\n删除频道失败: {channel_id}")
+            
+    except Exception as e:
+        print(f"测试过程中出现错误: {str(e)}")
+        import traceback
+        print(f"错误详情:\n{traceback.format_exc()}")
+
 if __name__ == "__main__":
     # 测试获取未爬取频道
     # test_get_uncrawled_channel()
     
     # 测试插入频道爬取数据
-    test_insert_channel_crawl()
+    # test_insert_channel_crawl()
     
     # 测试频道信息验证
-    # test_validate_channel_info() 
+    # test_validate_channel_info()
+    
+    # 测试删除频道
+    test_delete_channel() 

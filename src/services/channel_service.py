@@ -136,16 +136,10 @@ class ChannelService:
     def delete_channel(self, channel_id):
         """删除频道"""
         try:
-            # 删除频道基础数据
+            # 删除频道基础数据，crawl表数据会自动级联删除
             base_result = self.base_model.delete(channel_id)
             if not base_result:
                 self.log(f"删除频道基础数据失败: {channel_id}", 'ERROR')
-                return False
-                
-            # 删除频道爬取数据
-            crawl_result = self.crawl_model.delete_by_channel_id(channel_id)
-            if not crawl_result:
-                self.log(f"删除频道爬取数据失败: {channel_id}", 'ERROR')
                 return False
                 
             self.log(f"成功删除频道: {channel_id}")

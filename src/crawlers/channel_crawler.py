@@ -7,7 +7,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, WebDriverException
 import time
 import json
-from src.utils import ResponseProcessor, YouTubeParser
+from src.utils import ResponseProcessor, YouTubeParser, SelectorUtils
 from src.services import ChannelService
 import configparser
 import random
@@ -28,6 +28,7 @@ class ChannelCrawler:
         self.logger = Logger()
         self.response_processor = ResponseProcessor()
         self.youtube_parser = YouTubeParser()
+        self.selector_utils = SelectorUtils()
         
     def log(self, message, level='INFO'):
         """输出日志"""
@@ -121,6 +122,32 @@ class ChannelCrawler:
         except Exception as e:
             self.log(f"清理资源时出: {str(e)}", 'ERROR')
             
+    def get_text_by_selectors(self, selectors, attribute=None, wait_time=5):
+        """
+        通过多个选择器尝试获取元素文本或属性值
+        
+        Args:
+            selectors (list): XPath选择器列表
+            attribute (str, optional): 要获取的属性名，如果为None则获取文本内容
+            wait_time (int): 等待元素出现的最大时间（秒）
+            
+        Returns:
+            str: 获取到的文本或属性值，如果所有选择器都失败则返回None
+        """
+        for selector in selectors:
+            try:
+                element = WebDriverWait(self.driver, wait_time).until(
+                    EC.presence_of_element_located((By.XPATH, selector))
+                )
+                value = element.get_attribute(attribute) if attribute else element.text
+                if value:
+                    self.log(f"从选择器 {selector} 获取到{'属性' if attribute else '文本'}: {value}")
+                    return value
+            except Exception as selector_error:
+                self.log(f"选择器 {selector} 未找到元素: {str(selector_error)}")
+                continue
+        return None
+
     def crawl_channel(self, url):
         """爬取频道信息"""
         try:
@@ -152,69 +179,57 @@ class ChannelCrawler:
                     time.sleep(random.uniform(5, 10))
                     
                     # 获取页面上的channel_name
-                    page_channel_name = None
-                    try:
-                        # 使用更简单的选择器
-                        selectors_to_try = [
-                            "//*[@id='channel-name']",
-                            "//h1[contains(@class, 'title')]",
-                            "//h1//span",
-                            "//*[@id='page-header']//h1//span"
-                        ]
+                    channel_name_selectors = [
+                        "//*[@id='channel-name']",
+                        "//h1[contains(@class, 'title')]",
+                        "//h1//span",
+                        "//*[@id='page-header']//h1//span"
+                    ]
+                    
+                    page_channel_name = self.selector_utils.get_text_by_selectors(
+                        self.driver, 
+                        channel_name_selectors,
+                        self.logger
+                    )
+                    
+                    # 如果所有选择器都失败，保存页面源码和截图以便调试
+                    if not page_channel_name:
+                        self.log("所有选择器都失败，保存页面源码和截图以便调试")
+                        timestamp = time.strftime("%Y%m%d_%H%M%S")
                         
-                        for selector in selectors_to_try:
-                            try:
-                                channel_name_element = WebDriverWait(self.driver, 5).until(
-                                    EC.presence_of_element_located((By.XPATH, selector))
-                                )
-                                page_channel_name = channel_name_element.text
-                                if page_channel_name:
-                                    self.log(f"从选择器 {selector} 获取到channel_name: {page_channel_name}")
-                                    break
-                            except Exception as selector_error:
-                                self.log(f"选择器 {selector} 未找到元素: {str(selector_error)}")
-                                continue
+                        # 保存页面源码
+                        debug_dir = "debug"
+                        if not os.path.exists(debug_dir):
+                            os.makedirs(debug_dir)
+                            
+                        source_path = os.path.join(debug_dir, f"page_source_{timestamp}.html")
+                        with open(source_path, "w", encoding="utf-8") as f:
+                            f.write(self.driver.page_source)
+                        self.log(f"已保存页面源码到: {source_path}")
                         
-                        # 如果所有选择器都失败，保存页面源码和截图以便调试
-                        if not page_channel_name:
-                            self.log("所有选择器都失败，保存页面源码和截图以便调试")
-                            timestamp = time.strftime("%Y%m%d_%H%M%S")
-                            
-                            # 保存页面源码
-                            debug_dir = "debug"
-                            if not os.path.exists(debug_dir):
-                                os.makedirs(debug_dir)
-                                
-                            source_path = os.path.join(debug_dir, f"page_source_{timestamp}.html")
-                            with open(source_path, "w", encoding="utf-8") as f:
-                                f.write(self.driver.page_source)
-                            self.log(f"已保存页面源码到: {source_path}")
-                            
-                            # 保存截图
-                            screenshot_path = os.path.join(debug_dir, f"screenshot_{timestamp}.png")
-                            self.driver.save_screenshot(screenshot_path)
-                            self.log(f"已保存页面截图到: {screenshot_path}")
-                            
-                            # 频道不存在，返回None
-                            self.log("频道不存在，终止处理")
-                            return None
-                    except Exception as e:
-                        self.log(f"获取页面channel_name失败: {str(e)}")
+                        # 保存截图
+                        screenshot_path = os.path.join(debug_dir, f"screenshot_{timestamp}.png")
+                        self.driver.save_screenshot(screenshot_path)
+                        self.log(f"已保存页面截图到: {screenshot_path}")
+                        
+                        # 频道不存在，返回None
                         self.log("频道不存在，终止处理")
                         return None
                     
                     # 获取频道头像URL
-                    avatar_url = None
-                    try:
-                        avatar_xpath = "//*[@id=\"page-header\"]/yt-page-header-renderer/yt-page-header-view-model/div/div[1]/yt-decorated-avatar-view-model/yt-avatar-shape/div/div/div/img"
-                        avatar_element = WebDriverWait(self.driver, 5).until(
-                            EC.presence_of_element_located((By.XPATH, avatar_xpath))
-                        )
-                        avatar_url = avatar_element.get_attribute('src')
-                        self.log(f"从页面获取到avatar_url: {avatar_url}")
-                    except Exception as e:
-                        self.log(f"获取频道头像URL失败: {str(e)}")
-                        avatar_url = None
+                    avatar_selectors = [
+                        "//*[@id='page-header']//yt-avatar-shape//img",
+                        "//yt-decorated-avatar-view-model//img",
+                        "//*[contains(@class, 'channel-avatar')]//img",
+                        "//*[contains(@class, 'avatar')]//img"
+                    ]
+                    
+                    avatar_url = self.selector_utils.get_text_by_selectors(
+                        self.driver,
+                        avatar_selectors,
+                        self.logger,
+                        attribute='src'
+                    )
                     
                     # 点击"显示更多"区域
                     try:

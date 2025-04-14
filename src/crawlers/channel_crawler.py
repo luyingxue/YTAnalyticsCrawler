@@ -231,6 +231,67 @@ class ChannelCrawler:
                         attribute='src'
                     )
                     
+                    # 获取前三个视频的封面
+                    video_thumbnail_selectors = [
+                        "//ytd-rich-grid-renderer//ytd-rich-item-renderer[1]//img",
+                        "//ytd-rich-grid-renderer//ytd-rich-item-renderer[2]//img",
+                        "//ytd-rich-grid-renderer//ytd-rich-item-renderer[3]//img"
+                    ]
+                    
+                    video_thumbnails = []
+                    for i, selector in enumerate(video_thumbnail_selectors, 1):
+                        thumbnail_url = self.selector_utils.get_text_by_selectors(
+                            self.driver,
+                            [selector],
+                            self.logger,
+                            attribute='src'
+                        )
+                        if thumbnail_url:
+                            video_thumbnails.append(thumbnail_url)
+                            self.log(f"获取到第{i}个视频封面: {thumbnail_url}")
+                        else:
+                            self.log(f"未能获取到第{i}个视频封面")
+                    
+                    # 获取前三个视频的标题
+                    video_title_selectors = [
+                        "//ytd-rich-grid-renderer//ytd-rich-item-renderer[1]//h3/a/span",
+                        "//ytd-rich-grid-renderer//ytd-rich-item-renderer[2]//h3/a/span",
+                        "//ytd-rich-grid-renderer//ytd-rich-item-renderer[3]//h3/a/span"
+                    ]
+                    
+                    video_titles = []
+                    for i, selector in enumerate(video_title_selectors, 1):
+                        title = self.selector_utils.get_text_by_selectors(
+                            self.driver,
+                            [selector],
+                            self.logger
+                        )
+                        if title:
+                            video_titles.append(title)
+                            self.log(f"获取到第{i}个视频标题: {title}")
+                        else:
+                            self.log(f"未能获取到第{i}个视频标题")
+                    
+                    # 获取前三个视频的播放量
+                    video_views_selectors = [
+                        "//ytd-rich-grid-renderer//ytd-rich-item-renderer[1]//div/div[1]/span",
+                        "//ytd-rich-grid-renderer//ytd-rich-item-renderer[2]//div/div[1]/span",
+                        "//ytd-rich-grid-renderer//ytd-rich-item-renderer[3]//div/div[1]/span"
+                    ]
+                    
+                    video_views = []
+                    for i, selector in enumerate(video_views_selectors, 1):
+                        views = self.selector_utils.get_text_by_selectors(
+                            self.driver,
+                            [selector],
+                            self.logger
+                        )
+                        if views:
+                            video_views.append(views)
+                            self.log(f"获取到第{i}个视频播放量: {views}")
+                        else:
+                            self.log(f"未能获取到第{i}个视频播放量")
+                    
                     # 点击"显示更多"区域
                     try:
                         show_more_xpath = """//*[@id="page-header"]/yt-page-header-renderer/yt-page-header-view-model/div/div[1]/div/yt-description-preview-view-model/truncated-text/truncated-text-content/button/span/span"""

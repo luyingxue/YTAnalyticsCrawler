@@ -1,4 +1,5 @@
 from .base_model import BaseModel
+from datetime import datetime
 
 class ChannelCrawlModel(BaseModel):
     """频道爬取信息模型类，处理channel_crawl表的操作"""
@@ -6,15 +7,11 @@ class ChannelCrawlModel(BaseModel):
     def insert(self, data):
         """插入单条记录"""
         try:
-            query = """
-                INSERT INTO channel_crawl (
-                    channel_id, subscriber_count, video_count, view_count, crawl_date
-                ) VALUES (
-                    %(channel_id)s, %(subscriber_count)s, %(video_count)s, %(view_count)s, CURRENT_DATE
-                )
-            """
+            # 添加当前日期
+            data['crawl_date'] = datetime.now().date().isoformat()
             
-            self.execute_query(query, data, fetch=False)
+            # 使用Supabase的API插入数据
+            result = self.db.client.table('channel_crawl').insert(data).execute()
             self.log(f"已插入频道爬取数据: channel_id={data.get('channel_id')}")
             return True
             

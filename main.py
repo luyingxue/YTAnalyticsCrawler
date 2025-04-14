@@ -31,6 +31,7 @@ def signal_handler(signum, frame):
 
 def channel_worker(worker_id=None):
     """频道爬取工作进程"""
+    crawler = None
     try:
         logger = Logger().get_logger()
         logger.info(f"启动频道爬取进程 {worker_id}")
@@ -97,7 +98,11 @@ def channel_worker(worker_id=None):
         logger.error(f"[进程 {worker_id}] 频道爬取进程出错: {str(e)}")
     finally:
         logger.info(f"[进程 {worker_id}] 正在清理资源...")
-        crawler.cleanup()
+        if crawler:
+            try:
+                crawler.cleanup()
+            except Exception as cleanup_err:
+                logger.error(f"[进程 {worker_id}] 清理资源时出错: {str(cleanup_err)}")
         logger.info(f"[进程 {worker_id}] 进程结束")
 
 def main():

@@ -61,9 +61,9 @@
 
 ### 环境要求
 - Python 3.6+
-- MySQL 8.0+
 - Chrome浏览器
 - BrowserMob Proxy 2.1.4
+- Supabase账号和项目
 
 ### Python依赖
 ```bash
@@ -72,47 +72,17 @@ pip install -r requirements.txt
 
 ## 安装配置
 
-### 1. 数据库配置
-```sql
--- 创建数据库
-CREATE DATABASE youtube_data;
-
--- 创建用户并授权
-CREATE USER 'youtube_crawler'@'%' IDENTIFIED BY 'your_password';
-GRANT ALL PRIVILEGES ON youtube_data.* TO 'youtube_crawler'@'%';
-FLUSH PRIVILEGES;
-
--- 创建频道基础表
-CREATE TABLE channel_base (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    channel_id VARCHAR(30) UNIQUE,
-    channel_name VARCHAR(100),
-    is_benchmark BOOLEAN DEFAULT FALSE,
-    is_blacklist BOOLEAN DEFAULT FALSE,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- 创建频道爬取记录表
-CREATE TABLE channel_crawl (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    channel_id VARCHAR(30),
-    crawl_date DATE,
-    video_count INT,
-    subscriber_count INT,
-    view_count BIGINT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_channel_date (channel_id, crawl_date)
-);
-```
+### 1. Supabase配置
+1. 创建Supabase项目
+2. 获取项目URL和service_role key
+3. 创建必要的数据表
 
 ### 2. 配置文件
 复制 `config.template.ini` 为 `config.ini` 并修改：
 ```ini
-[database]
-host = your_mysql_host
-database = youtube_data
-user = youtube_crawler
-password = your_password
+[supabase]
+url = your_supabase_project_url
+key = your_supabase_service_role_key
 
 [crawler]
 max_scrolls = 2
@@ -164,7 +134,7 @@ python main.py
 
 ## 注意事项
 
-- 确保MySQL服务器已启动并可访问
+- 确保Supabase项目已正确配置
 - 确保BrowserMob Proxy已正确安装
 - 需要稳定的网络连接
 - 遵守YouTube的使用条款和政策

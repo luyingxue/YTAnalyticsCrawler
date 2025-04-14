@@ -41,7 +41,8 @@ class ChannelService:
             'avatar_url': processed_data.get('avatar_url'),
             'joined_date': processed_data.get('joined_date'),
             'country': processed_data.get('country'),
-            'last_crawl_date': datetime.now().date().isoformat()
+            'last_crawl_date': datetime.now().date().isoformat(),
+            'new_videos_info': processed_data.get('new_videos_info')
         }
         
         # 移除None值

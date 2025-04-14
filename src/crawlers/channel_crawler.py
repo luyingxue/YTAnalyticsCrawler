@@ -292,6 +292,31 @@ class ChannelCrawler:
                         else:
                             self.log(f"未能获取到第{i}个视频播放量")
                     
+                    # 获取前三个视频的URL
+                    video_url_selectors = [
+                        "//ytd-rich-grid-renderer//ytd-rich-item-renderer[1]//ytm-shorts-lockup-view-model/a",
+                        "//ytd-rich-grid-renderer//ytd-rich-item-renderer[2]//ytm-shorts-lockup-view-model/a",
+                        "//ytd-rich-grid-renderer//ytd-rich-item-renderer[3]//ytm-shorts-lockup-view-model/a"
+                    ]
+                    
+                    video_urls = []
+                    for i, selector in enumerate(video_url_selectors, 1):
+                        url = self.selector_utils.get_text_by_selectors(
+                            self.driver,
+                            [selector],
+                            self.logger,
+                            attribute='href'
+                        )
+                        if url:
+                            # 处理shorts URL
+                            if url.startswith('/shorts/'):
+                                video_id = url.split('/shorts/')[1]
+                                url = f"https://www.youtube.com/shorts/{video_id}"
+                            video_urls.append(url)
+                            self.log(f"获取到第{i}个视频URL: {url}")
+                        else:
+                            self.log(f"未能获取到第{i}个视频URL")
+                    
                     # 点击"显示更多"区域
                     try:
                         show_more_xpath = """//*[@id="page-header"]/yt-page-header-renderer/yt-page-header-view-model/div/div[1]/div/yt-description-preview-view-model/truncated-text/truncated-text-content/button/span/span"""
@@ -383,6 +408,21 @@ class ChannelCrawler:
                             if avatar_url:
                                 channel_info['avatar_url'] = avatar_url
                                 self.log("已将avatar_url添加到频道信息中")
+                            
+                            # 打包最新视频信息
+                            new_videos_info = []
+                            for i in range(len(video_thumbnails)):
+                                video_info = {
+                                    'thumbnail_url': video_thumbnails[i] if i < len(video_thumbnails) else None,
+                                    'title': video_titles[i] if i < len(video_titles) else None,
+                                    'views': video_views[i] if i < len(video_views) else None,
+                                    'url': video_urls[i] if i < len(video_urls) else None
+                                }
+                                new_videos_info.append(video_info)
+                            
+                            # 添加最新视频信息到频道信息中
+                            channel_info['new_videos_info'] = new_videos_info
+                            self.log("已将最新视频信息添加到频道信息中")
                             
                             self.log("成功解析频道信息")
                             return channel_info

@@ -1,5 +1,6 @@
 import os
 import sys
+import urllib.parse
 
 # 添加项目根目录到Python路径
 project_root = os.path.dirname(os.path.abspath(__file__))
@@ -39,42 +40,54 @@ def video_worker(worker_id=None):
         crawler = VideoCrawler(worker_id=worker_id)
         crawler.setup()
         
-        # 使用VideoService
+        # 使用VideoService和KeywordService
         video_service = VideoService()
+        keyword_service = KeywordService()
         
         while not should_exit.value:
             try:
-                # 获取未爬取的视频URL
-                url_data = video_service.get_uncrawled_url()
+                # 获取未爬取的关键词
+                keyword_data = keyword_service.get_uncrawled_keywords()
                 
-                if not url_data:
-                    logger.info(f"[进程 {worker_id}] 所有视频URL今天都已经爬取过，等待5分钟后继续...")
+                if not keyword_data:
+                    logger.info(f"[进程 {worker_id}] 没有找到未爬取的关键词，等待5分钟后继续...")
                     time.sleep(300)
                     continue
                 
+                # 构建YouTube搜索URL
+                keyword = keyword_data.get('key_words', '')
+                encoded_keyword = urllib.parse.quote(keyword)
+                search_url = f"https://www.youtube.com/results?search_query={encoded_keyword}"
+                
+                # 创建URL数据
+                url_data = {
+                    'url': search_url,
+                    'is_benchmark': False,
+                    'keyword_id': keyword_data.get('id')
+                }
+                
                 logger.info(
-                    f"[进程 {worker_id}] 开始爬取视频URL: "
-                    f"url={url_data['url']}, "
-                    f"is_benchmark={url_data['is_benchmark']}"
+                    f"[进程 {worker_id}] 开始爬取关键词: "
+                    f"keyword={keyword}, "
+                    f"url={search_url}"
                 )
                 
                 # 爬取视频信息
                 success = crawler.process_url(url_data)
                 
                 if success:
-                    logger.info(f"[进程 {worker_id}] 成功爬取视频URL: {url_data['url']}")
-                    # 更新URL状态为已爬取
-                    video_service.mark_url_as_crawled(url_data['url'])
+                    logger.info(f"[进程 {worker_id}] 成功爬取关键词: {keyword}")
+                    # 更新关键词状态为已爬取
+                    # 注意：这里不需要调用save_keyword_data，因为get_uncrawled_keywords方法已经更新了last_crawl_date
+                    # 如果需要更新其他字段，可以使用update_keyword_data方法（如果存在）
                 else:
-                    logger.error(f"[进程 {worker_id}] 爬取视频URL失败: {url_data['url']}")
-                    # 更新失败次数
-                    video_service.mark_url_as_failed(url_data['url'])
+                    logger.error(f"[进程 {worker_id}] 爬取关键词失败: {keyword}")
                 
-                # 等待一段时间再处理下一个URL
+                # 等待一段时间再处理下一个关键词
                 time.sleep(2)
                 
             except Exception as e:
-                logger.error(f"[进程 {worker_id}] 处理视频URL时出错: {str(e)}")
+                logger.error(f"[进程 {worker_id}] 处理关键词时出错: {str(e)}")
                 time.sleep(60)
                 continue
                 

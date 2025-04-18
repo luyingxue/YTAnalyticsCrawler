@@ -1,6 +1,7 @@
 from ..models import VideoModel
 from src.utils.logger import Logger
 from datetime import datetime
+import logging
 
 class VideoService:
     """视频服务类，处理视频相关的业务逻辑"""
@@ -12,7 +13,16 @@ class VideoService:
         
     def log(self, message, level='INFO'):
         """输出日志"""
-        self.logger.log(message, level)
+        # 将字符串日志级别转换为对应的整数常量
+        level_map = {
+            'DEBUG': logging.DEBUG,
+            'INFO': logging.INFO,
+            'WARNING': logging.WARNING,
+            'ERROR': logging.ERROR,
+            'CRITICAL': logging.CRITICAL
+        }
+        level_int = level_map.get(level, logging.INFO)
+        self.logger.log(level_int, message)
         
     def save_video_data(self, video_data):
         """保存视频数据到数据库"""

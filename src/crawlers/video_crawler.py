@@ -1,6 +1,9 @@
 from browsermobproxy import Server
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import time
 import json
 from src.utils import ResponseProcessor, FileHandler, YouTubeParser
@@ -29,7 +32,16 @@ class VideoCrawler:
         
     def log(self, message, level='INFO'):
         """输出日志"""
-        self.logger.log(message, level)
+        # 将字符串日志级别转换为对应的整数常量
+        level_map = {
+            'DEBUG': logging.DEBUG,
+            'INFO': logging.INFO,
+            'WARNING': logging.WARNING,
+            'ERROR': logging.ERROR,
+            'CRITICAL': logging.CRITICAL
+        }
+        level_int = level_map.get(level, logging.INFO)
+        self.logger.log(level_int, message)
         
     def setup(self):
         """设置爬虫环境"""
@@ -48,6 +60,7 @@ class VideoCrawler:
             chrome_options.add_argument('--disable-gpu')
             chrome_options.add_argument('--disable-extensions')
             chrome_options.add_argument('--disable-infobars')
+            chrome_options.add_argument('--enable-unsafe-swiftshader')
             chrome_options.add_argument('--disable-notifications')
             chrome_options.add_argument('--disable-popup-blocking')
             chrome_options.add_argument('--disable-web-security')
@@ -129,8 +142,10 @@ class VideoCrawler:
             # 等待Shorts按钮出现
             time.sleep(3)
             
-            # 尝试点击Shorts按钮
-            shorts_button = self.driver.find_element_by_xpath("//a[contains(@href, '/shorts')]")
+            # 使用更简洁的XPath选择器
+            shorts_button = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, "//yt-chip-cloud-chip-renderer[.//yt-formatted-string[contains(text(), 'Shorts')]]"))
+            )
             shorts_button.click()
             time.sleep(3)
             
@@ -151,9 +166,9 @@ class VideoCrawler:
             is_initial = True
             
             while scroll_count < max_scrolls:
-                # 滚动到底部
-                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(2)
+                # 使用更可靠的滚动方式
+                self.driver.execute_script("window.scrollTo(0, document.documentElement.scrollHeight);")
+                time.sleep(3)  # 增加等待时间，确保页面加载完成
                 
                 # 获取网络请求
                 entries = self.proxy.har['log']['entries']

@@ -8,7 +8,7 @@ sys.path.insert(0, project_root)
 from multiprocessing import Process, Pool, cpu_count, Value
 import time
 import signal
-from src.crawlers.crawler import YoutubeCrawler
+from src.crawlers.video_crawler import VideoCrawler
 from src.crawlers.channel_crawler import ChannelCrawler
 from src.utils import Logger
 import configparser
@@ -28,6 +28,66 @@ def signal_handler(signum, frame):
     
     # 设置共享的退出标志
     should_exit.value = True
+
+def video_worker(worker_id=None):
+    """视频爬取工作进程"""
+    crawler = None
+    try:
+        logger = Logger().get_logger()
+        logger.info(f"启动视频爬取进程 {worker_id}")
+        
+        crawler = VideoCrawler(worker_id=worker_id)
+        crawler.setup()
+        
+        # 使用VideoService
+        video_service = VideoService()
+        
+        while not should_exit.value:
+            try:
+                # 获取未爬取的视频URL
+                url_data = video_service.get_uncrawled_url()
+                
+                if not url_data:
+                    logger.info(f"[进程 {worker_id}] 所有视频URL今天都已经爬取过，等待5分钟后继续...")
+                    time.sleep(300)
+                    continue
+                
+                logger.info(
+                    f"[进程 {worker_id}] 开始爬取视频URL: "
+                    f"url={url_data['url']}, "
+                    f"is_benchmark={url_data['is_benchmark']}"
+                )
+                
+                # 爬取视频信息
+                success = crawler.process_url(url_data)
+                
+                if success:
+                    logger.info(f"[进程 {worker_id}] 成功爬取视频URL: {url_data['url']}")
+                    # 更新URL状态为已爬取
+                    video_service.mark_url_as_crawled(url_data['url'])
+                else:
+                    logger.error(f"[进程 {worker_id}] 爬取视频URL失败: {url_data['url']}")
+                    # 更新失败次数
+                    video_service.mark_url_as_failed(url_data['url'])
+                
+                # 等待一段时间再处理下一个URL
+                time.sleep(2)
+                
+            except Exception as e:
+                logger.error(f"[进程 {worker_id}] 处理视频URL时出错: {str(e)}")
+                time.sleep(60)
+                continue
+                
+    except Exception as e:
+        logger.error(f"[进程 {worker_id}] 视频爬取进程出错: {str(e)}")
+    finally:
+        logger.info(f"[进程 {worker_id}] 正在清理资源...")
+        if crawler:
+            try:
+                crawler.cleanup()
+            except Exception as cleanup_err:
+                logger.error(f"[进程 {worker_id}] 清理资源时出错: {str(cleanup_err)}")
+        logger.info(f"[进程 {worker_id}] 进程结束")
 
 def channel_worker(worker_id=None):
     """频道爬取工作进程"""
@@ -112,6 +172,7 @@ def main():
     
     logger = Logger().get_logger()
     channel_procs = []
+    video_procs = []  # 新增视频爬取进程列表
     
     try:
         logger.info("程序启动，按Ctrl+C可以安全退出")
@@ -130,11 +191,18 @@ def main():
             
         # 视频爬取进程配置
         if enable_video:
-            config_processes = int(config['crawler'].get('num_processes', 1))
+            config_processes = int(config['crawler'].get('video_processes', 1))
             retry_wait = int(config['crawler'].get('retry_wait', 300))
             max_processes = cpu_count() - 1
             num_processes = min(config_processes, max_processes)
             logger.info(f"视频爬取已启用，进程数: {num_processes}")
+            
+            # 启动视频爬取进程
+            for i in range(num_processes):
+                proc = Process(target=video_worker, kwargs={'worker_id': i})
+                proc.start()
+                video_procs.append(proc)
+                logger.info(f"视频爬取进程 {i+1} 已启动")
         else:
             logger.info("视频爬取已关闭")
             
@@ -153,7 +221,7 @@ def main():
             logger.info("频道爬取已关闭")
         
         # 等待所有进程结束
-        while any(p.is_alive() for p in channel_procs):
+        while any(p.is_alive() for p in channel_procs + video_procs):
             if should_exit.value:
                 logger.info("等待进程清理资源...")
                 # 给进程一些时间来清理
@@ -166,7 +234,7 @@ def main():
     finally:
         logger.info("程序结束")
         # 确保所有进程都已经结束
-        for proc in channel_procs:
+        for proc in channel_procs + video_procs:
             if proc.is_alive():
                 proc.join(timeout=10)  # 最多等待10秒
                 if proc.is_alive():

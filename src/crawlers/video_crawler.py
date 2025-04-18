@@ -8,7 +8,7 @@ from src.services import VideoService
 from src.utils.logger import Logger
 import logging
 
-class YoutubeCrawler:
+class VideoCrawler:
     def __init__(self, proxy_path=r"C:\Program Files\browsermob-proxy-2.1.4\bin\browsermob-proxy.bat", worker_id=None):
         """
         初始化爬虫

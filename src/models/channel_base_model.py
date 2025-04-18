@@ -54,28 +54,15 @@ class ChannelBaseModel(BaseModel):
     def get_by_condition(self, conditions: Dict[str, Any], order_by: Optional[str] = None, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """根据条件查询记录"""
         try:
-            result = self.db.query(self.table_name, **conditions)
-            return result
+            query = self.db.client.table(self.table_name).select('*')
+            for key, value in conditions.items():
+                query = query.eq(key, value)
+            if order_by:
+                query = query.order(order_by)
+            if limit:
+                query = query.limit(limit)
+            result = query.execute()
+            return result.data
         except Exception as e:
             self.log(f"查询频道基础数据失败: {str(e)}", 'ERROR')
             return []
-    
-    def call_rpc(self, procedure_name: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
-        """调用存储过程
-        
-        Args:
-            procedure_name: 存储过程名称
-            params: 存储过程参数，可选
-            
-        Returns:
-            存储过程返回的结果，如果失败则返回None
-        """
-        try:
-            rpc_call = self.db.client.rpc(procedure_name)
-            if params:
-                rpc_call = rpc_call.params(params)
-            result = rpc_call.execute()
-            return result.data[0] if result.data and len(result.data) > 0 else None
-        except Exception as e:
-            self.log(f"调用存储过程 {procedure_name} 失败: {str(e)}", 'ERROR')
-            return None

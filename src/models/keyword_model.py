@@ -3,6 +3,11 @@ from .base_model import BaseModel
 class KeywordModel(BaseModel):
     """关键词模型类，处理关键词相关的数据库操作"""
     
+    def __init__(self):
+        """初始化关键词模型"""
+        super().__init__()
+        self.table_name = 'key_words'
+    
     def get_uncrawled_keywords(self):
         """获取未爬取的关键词"""
         try:

@@ -132,6 +132,81 @@ python main.py
 - 不同天的相同频道可以保存
 - 支持多进程并发抓取
 
+## 存储过程
+
+### get_next_uncrawled_channel
+获取并更新下一个需要爬取的YouTube频道。
+
+```sql
+CREATE OR REPLACE FUNCTION public.get_next_uncrawled_channel()
+ RETURNS SETOF channel_base
+ LANGUAGE sql
+AS $function$
+    UPDATE channel_base
+    SET last_crawl_date = CURRENT_DATE
+    WHERE channel_id = (
+        SELECT channel_id
+        FROM channel_base
+        WHERE (last_crawl_date IS NULL OR last_crawl_date != CURRENT_DATE)
+            AND is_blacklist = false
+        ORDER BY 
+            is_benchmark DESC,
+            CASE WHEN last_crawl_date IS NULL THEN 1 ELSE 0 END DESC,
+            last_crawl_date ASC
+        LIMIT 1
+    )
+    RETURNING *;
+$function$
+```
+
+特点：
+- 返回一个未在当天爬取的频道信息
+- 自动更新最后爬取日期
+- 优先级顺序：
+  1. 基准频道（is_benchmark = true）
+  2. 从未爬取的频道（last_crawl_date IS NULL）
+  3. 最早爬取的频道
+- 排除黑名单频道（is_blacklist = false）
+
+### get_next_uncrawled_keyword
+获取并更新下一个需要爬取的关键词。
+
+```sql
+CREATE OR REPLACE FUNCTION public.get_next_uncrawled_keyword()
+ RETURNS SETOF key_words
+ LANGUAGE sql
+AS $function$
+    UPDATE key_words
+    SET last_crawl_date = CURRENT_DATE
+    WHERE id = (
+        SELECT id
+        FROM key_words
+        WHERE (last_crawl_date IS NULL OR last_crawl_date != CURRENT_DATE)
+        ORDER BY 
+            CASE WHEN last_crawl_date IS NULL THEN 1 ELSE 0 END DESC,
+            last_crawl_date ASC
+        LIMIT 1
+    )
+    RETURNING *;
+$function$
+```
+
+特点：
+- 返回一个未在当天爬取的关键词
+- 自动更新最后爬取日期
+- 优先级顺序：
+  1. 从未爬取的关键词（last_crawl_date IS NULL）
+  2. 最早爬取的关键词
+
+使用方法：
+```sql
+-- 获取下一个待爬取频道
+SELECT * FROM get_next_uncrawled_channel();
+
+-- 获取下一个待爬取关键词
+SELECT * FROM get_next_uncrawled_keyword();
+```
+
 ## 注意事项
 
 - 确保Supabase项目已正确配置

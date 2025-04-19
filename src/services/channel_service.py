@@ -321,4 +321,18 @@ class ChannelService:
         daily_growth = (end_value - start_value) / start_value / days
         
         # 转换为百分比
-        return daily_growth * 100 
+        return daily_growth * 100
+        
+    def batch_add_channels(self, channel_ids):
+        """
+        批量添加频道
+        
+        Args:
+            channel_ids: 频道ID列表
+            
+        Returns:
+            bool: 是否成功添加所有频道
+        """
+        # 暂时设置为空函数，后续实现具体逻辑
+        self.log(f"批量添加频道功能尚未实现，接收到 {len(channel_ids)} 个频道ID")
+        return True 

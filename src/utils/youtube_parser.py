@@ -426,15 +426,15 @@ class YouTubeParser:
                 if video_data:
                     results.append(video_data)
                     # 打印每个视频的详细信息
-                    print("\n视频信息:")
-                    print(f"视频ID: {video_data.video_id}")
-                    print(f"标题: {video_data.title}")
-                    print(f"观看次数: {video_data.view_count}")
-                    print(f"发布日期: {video_data.published_date}")
-                    print(f"频道ID: {video_data.channel_id}")
-                    print(f"频道名称: {video_data.channel_name}")
-                    print(f"规范URL: {video_data.canonical_base_url}")
-                    print("-" * 50)
+                    # print("\n视频信息:")
+                    # print(f"视频ID: {video_data.video_id}")
+                    # print(f"标题: {video_data.title}")
+                    # print(f"观看次数: {video_data.view_count}")
+                    # print(f"发布日期: {video_data.published_date}")
+                    # print(f"频道ID: {video_data.channel_id}")
+                    # print(f"频道名称: {video_data.channel_name}")
+                    # print(f"规范URL: {video_data.canonical_base_url}")
+                    # print("-" * 50)
             
             self.logger.log(f"\n总共解析了 {len(results)} 个视频的数据")
             return results

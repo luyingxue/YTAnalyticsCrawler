@@ -7,7 +7,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import time
 import json
 from src.utils import ResponseProcessor, FileHandler
-from src.services import VideoService
+from src.services import VideoService, ChannelService
 from src.utils.logger import Logger
 from src.utils.youtube_parser import YouTubeParser
 import logging
@@ -163,6 +163,7 @@ class VideoCrawler:
             request_count = 0
             is_initial = True
             processed_contents = set()  # 用于跟踪已处理的响应内容
+            all_channel_ids = set()  # 用于存储所有唯一的channel_id
             
             # 执行滚动操作
             self.log("开始执行页面滚动")
@@ -229,14 +230,18 @@ class VideoCrawler:
                             # 打印解析出的视频数据列表
                             self.log(f"解析出的视频数据列表:")
                             for video_data in video_data_list:
-                                self.log(f"视频ID: {video_data.video_id}")
-                                self.log(f"标题: {video_data.title}")
-                                self.log(f"观看次数: {video_data.view_count}")
-                                self.log(f"发布日期: {video_data.published_date}")
-                                self.log(f"频道ID: {video_data.channel_id}")
-                                self.log(f"频道名称: {video_data.channel_name}")
-                                self.log(f"规范URL: {video_data.canonical_base_url}")
-                                self.log("-" * 50)
+                                # self.log(f"视频ID: {video_data.video_id}")
+                                # self.log(f"标题: {video_data.title}")
+                                # self.log(f"观看次数: {video_data.view_count}")
+                                # self.log(f"发布日期: {video_data.published_date}")
+                                # self.log(f"频道ID: {video_data.channel_id}")
+                                # self.log(f"频道名称: {video_data.channel_name}")
+                                # self.log(f"规范URL: {video_data.canonical_base_url}")
+                                # self.log("-" * 50)
+                                
+                                # 将channel_id添加到集合中（自动去重）
+                                if video_data.channel_id:
+                                    all_channel_ids.add(video_data.channel_id)
                             
                         except Exception as e:
                             self.log(f"处理响应时出错: {str(e)}", 'ERROR')
@@ -244,7 +249,16 @@ class VideoCrawler:
                     else:
                         self.log("响应内容为空")
             
+            # 打印所有收集到的唯一channel_id
             self.log(f"数据分析完成，共处理 {request_count} 个请求")
+            self.log(f"共收集到 {len(all_channel_ids)} 个唯一频道ID:")
+            for channel_id in all_channel_ids:
+                self.log(f"频道ID: {channel_id}")
+                
+            # 调用批量插入频道函数
+            channel_service = ChannelService()
+            channel_service.batch_add_channels(list(all_channel_ids))
+            
             return True
             
         except Exception as e:

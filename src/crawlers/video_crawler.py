@@ -124,95 +124,111 @@ class VideoCrawler:
             self.driver.get(url)
             time.sleep(5)  # 等待页面加载
             
-            # 点击Shorts按钮
-            if not self._click_shorts_button():
-                self.log("点击Shorts按钮失败")
-                return False
-                
-            # 滚动并分析
-            return self._scroll_and_analyze()
+            # 处理Shorts内容
+            return self._process_shorts()
             
         except Exception as e:
             self.log(f"处理URL时出错: {str(e)}", 'ERROR')
             return False
             
-    def _click_shorts_button(self):
-        """点击Shorts按钮"""
+    def _process_shorts(self):
+        """处理Shorts内容：点击按钮并分析数据"""
         try:
             # 等待Shorts按钮出现
             time.sleep(3)
-            
-            # 使用更简洁的XPath选择器
             shorts_button = WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((By.XPATH, "//yt-chip-cloud-chip-renderer[.//yt-formatted-string[contains(text(), 'Shorts')]]"))
             )
+            
+            # 开始监视网络请求
+            self.log("开始监视网络请求")
+            self.proxy.new_har("youtube", options={
+                'captureHeaders': True,
+                'captureContent': True,
+                'captureBinaryContent': True,
+                'captureEncoding': True,
+                'urlPattern': '.*/youtubei/v1/search.*'  # 捕获所有youtubei/v1/search请求
+            })
+            
+            # 点击Shorts按钮
             shorts_button.click()
             time.sleep(3)
-            
             self.log("已点击Shorts按钮")
-            return True
             
-        except Exception as e:
-            self.log(f"点击Shorts按钮时出错: {str(e)}", 'ERROR')
-            return False
-            
-    def _scroll_and_analyze(self):
-        """滚动页面并分析数据"""
-        try:
             # 初始化变量
             scroll_count = 0
             max_scrolls = 10
             request_count = 0
             is_initial = True
+            processed_contents = set()  # 用于跟踪已处理的响应内容
             
+            # 执行滚动操作
+            self.log("开始执行页面滚动")
             while scroll_count < max_scrolls:
                 # 使用更可靠的滚动方式
                 self.driver.execute_script("window.scrollTo(0, document.documentElement.scrollHeight);")
                 time.sleep(3)  # 增加等待时间，确保页面加载完成
                 
-                # 获取网络请求
-                entries = self.proxy.har['log']['entries']
-                
-                # 分析请求
-                for entry in entries:
-                    if 'youtube.com/youtubei/v1/browse' in entry['request']['url']:
-                        request_count += 1
-                        
-                        # 获取响应内容
-                        response = entry['response']
-                        content = response.get('content', {})
-                        
-                        if content.get('text'):
-                            # 处理响应内容
-                            response_text = self.response_processor.process_response_content({
-                                'content': content,
-                                'headers': response.get('headers', [])
-                            })
-                            
-                            # 解析JSON
-                            try:
-                                json_data = json.loads(response_text)
-                                
-                                # 保存原始JSON
-                                self.file_handler.save_response_json(json_data, request_count, is_initial)
-                                
-                                # 分析并存储数据
-                                if is_initial:
-                                    self.youtube_parser.analyze_and_store_json_response_first(json_data)
-                                    is_initial = False
-                                else:
-                                    self.youtube_parser.analyze_and_store_json_response_else(json_data)
-                                    
-                            except json.JSONDecodeError:
-                                self.log("JSON解析失败")
-                                
                 # 增加滚动计数
                 scroll_count += 1
                 self.log(f"已完成第 {scroll_count} 次滚动")
                 
-            self.log(f"滚动完成，共处理 {request_count} 个请求")
+                # 获取当前的HAR日志
+                entries = self.proxy.har['log']['entries']
+                self.log(f"当前捕获到 {len(entries)} 个请求")
+                
+                # 只处理新的search请求
+                for entry in entries:
+                    request_url = entry['request']['url']
+                    self.log(f"处理请求: {request_url}")
+                    
+                    # 检查是否是YouTube search API请求
+                    if '/youtubei/v1/search' not in request_url:
+                        self.log("不是YouTube search API请求，跳过")
+                        continue
+                        
+                    # 获取响应内容
+                    response = entry['response']
+                    content = response.get('content', {})
+                    
+                    if content.get('text'):
+                        # 处理响应内容
+                        try:
+                            response_text = self.response_processor.process_response_content({
+                                'content': content,
+                                'headers': response.get('headers', [])
+                            })
+                            self.log(f"成功获取响应内容，长度: {len(response_text)}")
+                            
+                            # 解析JSON
+                            json_data = json.loads(response_text)
+                            
+                            # 使用响应内容的哈希值作为唯一标识
+                            content_hash = hash(str(json_data))
+                            if content_hash in processed_contents:
+                                self.log("响应内容已处理过，跳过")
+                                continue
+                                
+                            processed_contents.add(content_hash)
+                            request_count += 1
+                            
+                            # 保存原始JSON
+                            self.file_handler.save_response_json(json_data, request_count, is_initial)
+                            self.log(f"已保存第 {request_count} 个响应")
+                            
+                            # 如果是初始请求，标记为已完成
+                            if is_initial:
+                                is_initial = False
+                                
+                        except Exception as e:
+                            self.log(f"处理响应时出错: {str(e)}", 'ERROR')
+                            continue
+                    else:
+                        self.log("响应内容为空")
+            
+            self.log(f"数据分析完成，共处理 {request_count} 个请求")
             return True
             
         except Exception as e:
-            self.log(f"滚动并分析数据时出错: {str(e)}", 'ERROR')
+            self.log(f"处理Shorts内容时出错: {str(e)}", 'ERROR')
             return False

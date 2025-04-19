@@ -52,27 +52,6 @@ class VideoService:
             self.log(f"获取未爬取URL时出错: {str(e)}", "ERROR")
             return None
             
-    def mark_url_as_crawled(self, url):
-        """标记URL为已爬取"""
-        try:
-            # 更新URL状态
-            result = self.model.update_url_status(url, {
-                'last_crawl_date': datetime.now().date().isoformat(),
-                'crawl_status': 'success',
-                'fail_count': 0
-            })
-            
-            if result:
-                self.log(f"成功标记URL为已爬取: {url}")
-                return True
-            else:
-                self.log(f"标记URL为已爬取失败: {url}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"标记URL为已爬取时出错: {str(e)}", "ERROR")
-            return False
-            
     def mark_url_as_failed(self, url):
         """标记URL为爬取失败"""
         try:
@@ -100,4 +79,21 @@ class VideoService:
                 
         except Exception as e:
             self.log(f"标记URL为爬取失败时出错: {str(e)}", "ERROR")
-            return False 
+            return False
+
+    def save_video(self, video_data):
+        """保存视频数据"""
+        try:
+            # 实现视频数据保存逻辑
+            pass
+        except Exception as e:
+            self.logger.error(f"保存视频数据时出错: {str(e)}")
+            
+    def get_video_by_id(self, video_id):
+        """根据ID获取视频数据"""
+        try:
+            # 实现视频数据获取逻辑
+            pass
+        except Exception as e:
+            self.logger.error(f"获取视频数据时出错: {str(e)}")
+            return None 

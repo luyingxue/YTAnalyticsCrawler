@@ -1,5 +1,6 @@
 import json
 import time
+import os
 from typing import Dict, Any
 
 class FileHandler:
@@ -8,6 +9,10 @@ class FileHandler:
     def __init__(self):
         from .logger import Logger
         self.logger = Logger()
+        # 确保responses目录存在
+        self.responses_dir = "responses"
+        if not os.path.exists(self.responses_dir):
+            os.makedirs(self.responses_dir)
     
     def save_response_json(self, json_data: Dict[str, Any], request_count: int, is_initial: bool = False) -> None:
         """
@@ -20,10 +25,11 @@ class FileHandler:
         timestamp = time.strftime('%Y%m%d_%H%M%S')
         request_type = "initial" if is_initial else "continuation"
         filename = f"response_json_{timestamp}_{request_type}_{request_count}.json"
+        filepath = os.path.join(self.responses_dir, filename)
         
         try:
-            with open(filename, 'w', encoding='utf-8') as f:
+            with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(json_data, f, ensure_ascii=False, indent=2)
-            self.logger.log(f"已保存响应JSON到文件: {filename}")
+            self.logger.log(f"已保存响应JSON到文件: {filepath}")
         except Exception as e:
             self.logger.log(f"保存响应JSON时出错: {str(e)}", 'ERROR') 

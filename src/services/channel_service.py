@@ -328,11 +328,30 @@ class ChannelService:
         批量添加频道
         
         Args:
-            channel_ids: 频道ID列表
+            channel_ids: 频道ID列表或集合
             
         Returns:
-            bool: 是否成功添加所有频道
+            Tuple[bool, str]: (是否成功, 消息)
         """
-        # 暂时设置为空函数，后续实现具体逻辑
-        self.log(f"批量添加频道功能尚未实现，接收到 {len(channel_ids)} 个频道ID")
-        return True 
+        try:
+            # 转换为集合，去重
+            channel_ids_set = set(channel_ids)
+            
+            # 记录开始处理
+            self.log(f"开始批量添加频道，共 {len(channel_ids_set)} 个唯一频道ID")
+            
+            # 调用模型层的batch_insert方法
+            success, message = self.base_model.batch_insert(channel_ids_set)
+            
+            # 记录处理结果
+            if success:
+                self.log(message)
+            else:
+                self.log(message, 'ERROR')
+            
+            return success, message
+            
+        except Exception as e:
+            error_message = f"批量添加频道时出错: {str(e)}"
+            self.log(error_message, 'ERROR')
+            return False, error_message 

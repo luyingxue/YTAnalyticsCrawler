@@ -6,10 +6,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 import json
-from src.utils import ResponseProcessor, FileHandler, YouTubeParser
+from src.utils import ResponseProcessor, FileHandler
 from src.services import VideoService
 from src.utils.logger import Logger
+from src.utils.youtube_parser import YouTubeParser
 import logging
+from typing import Dict, Any
 
 class VideoCrawler:
     def __init__(self, proxy_path=r"C:\Program Files\browsermob-proxy-2.1.4\bin\browsermob-proxy.bat", worker_id=None):
@@ -212,14 +214,30 @@ class VideoCrawler:
                             processed_contents.add(content_hash)
                             request_count += 1
                             
-                            # 保存原始JSON
-                            self.file_handler.save_response_json(json_data, request_count, is_initial)
-                            self.log(f"已保存第 {request_count} 个响应")
+                            # 注释掉保存原始JSON的代码，但保留以供将来参考
+                            # self.file_handler.save_response_json(json_data, request_count, is_initial)
+                            # self.log(f"已保存第 {request_count} 个响应")
                             
                             # 如果是初始请求，标记为已完成
-                            if is_initial:
-                                is_initial = False
-                                
+                            # if is_initial:
+                            #     is_initial = False
+                            
+                            # 调用统一的视频解析函数
+                            video_data_list = self.youtube_parser.extract_videos_from_json(json_data)
+                            self.log(f"已解析第 {request_count} 个响应中的视频数据")
+                            
+                            # 打印解析出的视频数据列表
+                            self.log(f"解析出的视频数据列表:")
+                            for video_data in video_data_list:
+                                self.log(f"视频ID: {video_data.video_id}")
+                                self.log(f"标题: {video_data.title}")
+                                self.log(f"观看次数: {video_data.view_count}")
+                                self.log(f"发布日期: {video_data.published_date}")
+                                self.log(f"频道ID: {video_data.channel_id}")
+                                self.log(f"频道名称: {video_data.channel_name}")
+                                self.log(f"规范URL: {video_data.canonical_base_url}")
+                                self.log("-" * 50)
+                            
                         except Exception as e:
                             self.log(f"处理响应时出错: {str(e)}", 'ERROR')
                             continue

@@ -3,7 +3,6 @@ import time
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from .data_converter import DataConverter
-from src.services import VideoService
 from .logger import Logger
 
 @dataclass
@@ -24,10 +23,9 @@ class YouTubeParser:
     def __init__(self):
         self.logger = Logger()
         self.data_converter = DataConverter()
-        self.video_service = VideoService()
     
     def analyze_and_store_json_response_first(self, json_data: Dict[str, Any]) -> List[VideoData]:
-        """分析并存储第一次JSON响应数据"""
+        """分析第一次JSON响应数据"""
         self.logger.log("\n分析JSON响应...")
         
         try:
@@ -48,9 +46,16 @@ class YouTubeParser:
                 video_data = self._extract_video_data(item)
                 if video_data:
                     results.append(video_data)
-            
-            if results:
-                self.video_service.save_videos_batch(results)
+                    # 打印每个视频的详细信息
+                    print("\n视频信息:")
+                    print(f"视频ID: {video_data.video_id}")
+                    print(f"标题: {video_data.title}")
+                    print(f"观看次数: {video_data.view_count}")
+                    print(f"发布日期: {video_data.published_date}")
+                    print(f"频道ID: {video_data.channel_id}")
+                    print(f"频道名称: {video_data.channel_name}")
+                    print(f"规范URL: {video_data.canonical_base_url}")
+                    print("-" * 50)
             
             self.logger.log(f"\n总共解析了 {len(results)} 个视频的数据")
             return results
@@ -60,7 +65,7 @@ class YouTubeParser:
             return []
     
     def analyze_and_store_json_response_else(self, json_data: Dict[str, Any]) -> List[VideoData]:
-        """分析并存储后续JSON响应数据"""
+        """分析后续JSON响应数据"""
         self.logger.log("\n分析JSON响应...")
         
         try:
@@ -74,9 +79,16 @@ class YouTubeParser:
                 video_data = self._extract_video_data(item)
                 if video_data:
                     results.append(video_data)
-            
-            if results:
-                self.video_service.save_videos_batch(results)
+                    # 打印每个视频的详细信息
+                    print("\n视频信息:")
+                    print(f"视频ID: {video_data.video_id}")
+                    print(f"标题: {video_data.title}")
+                    print(f"观看次数: {video_data.view_count}")
+                    print(f"发布日期: {video_data.published_date}")
+                    print(f"频道ID: {video_data.channel_id}")
+                    print(f"频道名称: {video_data.channel_name}")
+                    print(f"规范URL: {video_data.canonical_base_url}")
+                    print("-" * 50)
             
             self.logger.log(f"\n总共解析了 {len(results)} 个视频的数据")
             return results
@@ -376,4 +388,57 @@ class YouTubeParser:
             return playlist_info
         except Exception as e:
             self.logger.log(f"解析播放列表信息时出错: {str(e)}", 'ERROR')
-            return {} 
+            return {}
+
+    def extract_videos_from_json(self, json_data: Dict[str, Any]) -> List[VideoData]:
+        """
+        统一的JSON视频数据提取方法
+        Args:
+            json_data: JSON响应数据
+        Returns:
+            List[VideoData]: 视频数据列表
+        """
+        self.logger.log("\n分析JSON响应...")
+        
+        try:
+            # 使用统一的路径选择器获取视频内容
+            commands = json_data.get('onResponseReceivedCommands', [{}])[0]
+            
+            # 尝试不同的路径获取contents
+            contents = None
+            if 'reloadContinuationItemsCommand' in commands:
+                contents = commands['reloadContinuationItemsCommand']['continuationItems'][0] \
+                    ['twoColumnSearchResultsRenderer']['primaryContents']['sectionListRenderer'] \
+                    ['contents'][0]['itemSectionRenderer']['contents']
+            elif 'appendContinuationItemsAction' in commands:
+                contents = commands['appendContinuationItemsAction']['continuationItems'][0] \
+                    ['itemSectionRenderer']['contents']
+            
+            if not contents:
+                self.logger.log("未找到视频内容", 'WARNING')
+                return []
+            
+            self.logger.log(f"\n找到 {len(contents)} 个视频内容")
+            
+            results = []
+            for item in contents:
+                video_data = self._extract_video_data(item)
+                if video_data:
+                    results.append(video_data)
+                    # 打印每个视频的详细信息
+                    print("\n视频信息:")
+                    print(f"视频ID: {video_data.video_id}")
+                    print(f"标题: {video_data.title}")
+                    print(f"观看次数: {video_data.view_count}")
+                    print(f"发布日期: {video_data.published_date}")
+                    print(f"频道ID: {video_data.channel_id}")
+                    print(f"频道名称: {video_data.channel_name}")
+                    print(f"规范URL: {video_data.canonical_base_url}")
+                    print("-" * 50)
+            
+            self.logger.log(f"\n总共解析了 {len(results)} 个视频的数据")
+            return results
+            
+        except Exception as e:
+            self.logger.log(f"分析JSON响应时出错: {str(e)}", 'ERROR')
+            return [] 

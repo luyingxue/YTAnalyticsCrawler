@@ -77,29 +77,44 @@ class ChannelCrawler:
             chrome_options.add_argument(f'--proxy-server={proxy_url}')
             chrome_options.add_argument('--ignore-certificate-errors')
             
+            # 添加新的配置参数来解决TensorFlow相关问题
+            chrome_options.add_argument('--disable-gpu')  # 禁用GPU硬件加速
+            chrome_options.add_argument('--disable-software-rasterizer')  # 禁用软件光栅化
+            chrome_options.add_argument('--disable-dev-shm-usage')  # 禁用/dev/shm使用
+            chrome_options.add_argument('--no-sandbox')  # 禁用沙箱
+            chrome_options.add_argument('--disable-features=NetworkService')  # 禁用网络服务
+            chrome_options.add_argument('--disable-features=VizDisplayCompositor')  # 禁用显示合成器
+            chrome_options.add_argument('--disable-blink-features=AutomationControlled')  # 禁用自动化控制检测
+            chrome_options.add_argument('--disable-machine-learning')  # 禁用机器学习功能
+            
             # 设置浏览器语言为英文
             chrome_options.add_argument('--lang=en-US')
-            chrome_options.add_experimental_option('prefs', {'intl.accept_languages': 'en-US,en'})
-            
-            # 禁用图片和视频加载以提高性能
-            chrome_prefs = {
+            chrome_options.add_experimental_option('prefs', {
+                'intl.accept_languages': 'en-US,en',
+                # 更新Chrome首选项
                 "profile.default_content_setting_values": {
-                    "images": 2,       # 1表示启用图片
-                    "media_stream": 2, # 禁用媒体流
-                    "plugins": 2,      # 禁用插件
-                    "video": 2,        # 禁用视频
-                    "sound": 2         # 禁用声音
+                    "images": 2,
+                    "media_stream": 2,
+                    "plugins": 2,
+                    "video": 2,
+                    "sound": 2,
+                    "notifications": 2  # 禁用通知
                 },
                 "profile.managed_default_content_settings": {
                     "images": 2,
                     "media_stream": 2,
-                    "sound": 2         # 禁用声音
+                    "sound": 2,
+                    "notifications": 2
                 },
-                "intl.accept_languages": "en-US,en"
-            }
-            chrome_options.add_experimental_option("prefs", chrome_prefs)
+                "profile.password_manager_enabled": False,  # 禁用密码管理器
+                "credentials_enable_service": False,  # 禁用凭据服务
+            })
             
             self.driver = webdriver.Chrome(options=chrome_options)
+            # 设置页面加载超时
+            self.driver.set_page_load_timeout(30)  # 30秒超时
+            # 设置脚本执行超时
+            self.driver.set_script_timeout(30)  # 30秒超时
             self.log("Chrome浏览器初始化成功")
             
         except Exception as e:
@@ -174,8 +189,13 @@ class ChannelCrawler:
                         }
                     )
                     
-                    # 访问频道页面
+                    # 访问频道页面时添加超时处理
+                    self.driver.set_page_load_timeout(30)
                     self.driver.get(url)
+                    
+                    # 如果页面加载成功，重置超时时间为更长的值
+                    self.driver.set_page_load_timeout(120)
+                    
                     time.sleep(random.uniform(5, 10))
                     
                     # 获取页面上的channel_name
@@ -435,6 +455,21 @@ class ChannelCrawler:
                     time.sleep(random.uniform(2, 5))
                     continue
                     
+                except TimeoutException:
+                    self.log("页面加载超时，正在重试...")
+                    # 尝试关闭当前标签页
+                    try:
+                        self.driver.execute_script("window.stop();")
+                    except:
+                        pass
+                    retry_count += 1
+                    time.sleep(random.uniform(5, 10))
+                    continue
+                except WebDriverException as e:
+                    self.log(f"WebDriver错误: {str(e)}")
+                    retry_count += 1
+                    time.sleep(random.uniform(5, 10))
+                    continue
                 except Exception as e:
                     self.log(f"处理频道时出错: {str(e)}")
                     retry_count += 1

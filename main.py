@@ -148,16 +148,16 @@ def channel_worker(worker_id=None):
                 else:
                     logger.error(f"[进程 {worker_id}] 爬取频道失败: {channel['channel_id']}")
                     
-                    # 删除不存在的频道记录
-                    try:
-                        logger.info(f"[进程 {worker_id}] 正在删除不存在的频道记录: {channel['channel_id']}")
-                        deleted = channel_service.delete_channel(channel['channel_id'])
-                        if deleted:
-                            logger.info(f"[进程 {worker_id}] 成功删除不存在的频道记录: {channel['channel_id']}")
-                        else:
-                            logger.info(f"[进程 {worker_id}] 删除不存在的频道记录失败: {channel['channel_id']}")
-                    except Exception as delete_err:
-                        logger.error(f"[进程 {worker_id}] 删除不存在频道记录时出错: {str(delete_err)}")
+                    # # 删除不存在的频道记录
+                    # try:
+                    #     logger.info(f"[进程 {worker_id}] 正在删除不存在的频道记录: {channel['channel_id']}")
+                    #     deleted = channel_service.delete_channel(channel['channel_id'])
+                    #     if deleted:
+                    #         logger.info(f"[进程 {worker_id}] 成功删除不存在的频道记录: {channel['channel_id']}")
+                    #     else:
+                    #         logger.info(f"[进程 {worker_id}] 删除不存在的频道记录失败: {channel['channel_id']}")
+                    # except Exception as delete_err:
+                    #     logger.error(f"[进程 {worker_id}] 删除不存在频道记录时出错: {str(delete_err)}")
                 
                 # 等待一段时间再处理下一个频道
                 time.sleep(2)
